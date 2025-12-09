@@ -1,0 +1,74 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.pyc
+
+# Virtual environments
+.venv/
+.venv*/
+venv/
+ENV/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Models and checkpoints
+*.model
+*.pt
+*.pth
+*.bin
+*.safetensors
+*.ckpt
+models/
+checkpoint_*.pt
+best_model.pt
+final_model.pt
+
+# Training outputs
+wandb/
+runs/
+logs/
+outputs/
+checkpoints/
+
+# Data cache
+*.cache
+.cache/
+data_cache/
+multi_source_base/
+
+# API Keys and secrets
+*.key
+*.pem
+.env
+.env.local
+hugging_face_token.txt
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Large data files
+*.zip
+*.tar.gz
+*.tgz
+
+# Hugging Face cache
+speaker-attribution-acl2023/
+transformers_cache/
+deprecated
