@@ -24,7 +24,9 @@ env/
 *.bin
 *.safetensors
 *.ckpt
-models/
+models/*
+!models/max_performance_model.py
+!models/ensemble.py
 checkpoint_*.pt
 best_model.pt
 final_model.pt
