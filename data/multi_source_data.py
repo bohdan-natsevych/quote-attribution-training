@@ -223,72 +223,116 @@ class MultiSourceDataLoader:
         return dict(self.data_by_genre)
     
     def load_pdnc(self, path: Path) -> List[Dict]:
-        """Load PDNC dataset."""
+        """Load PDNC dataset from training splits.
+        
+        PDNC data format (tab-separated):
+        - cols[0] = sentence id (book_quote_id)
+        - cols[1] = quote id
+        - cols[2] = entity id (gold speaker index in candidates)
+        - cols[3] = quote token position
+        - cols[4] = candidates (JSON array of [start, end, name, coref_id])
+        - cols[5] = text (space-separated tokens)
+        
+        Data location: training/data/pdnc/leave-x-out/split_N/quotes.{train,dev,test}.txt
+        """
+        import json
         samples = []
         
-        print(f"  DEBUG: Initial path = {path}")
-        print(f"  DEBUG: Path exists = {path.exists()}")
-        if path.exists():
-            print(f"  DEBUG: Contents = {list(path.iterdir())[:10]}")
-        
         # CURSOR: Handle nested structure when full repo is cloned
-        # The speaker-attribution-acl2023 repo has data/pdnc/ inside it
-        nested_path = path / "data" / "pdnc"
-        if nested_path.exists():
-            print(f"  Found nested PDNC data at {nested_path}")
-            path = nested_path
-        else:
-            # CURSOR: Also try just 'data' folder (some repo structures)
-            data_path = path / "data"
-            if data_path.exists():
-                print(f"  DEBUG: Found data/ folder, contents = {list(data_path.iterdir())[:10]}")
+        # The speaker-attribution-acl2023 repo has training/data/pdnc inside it
+        training_pdnc = path / "training" / "data" / "pdnc"
+        if training_pdnc.exists():
+            print(f"  Found PDNC training data at {training_pdnc}")
+            path = training_pdnc
         
-        quote_files = list(path.glob("**/quote_info.csv"))
-        print(f"  Found {len(quote_files)} quote_info.csv files")
+        # CURSOR: Look for leave-x-out splits (preferred for cross-validation)
+        leave_x_out = path / "leave-x-out"
+        if not leave_x_out.exists():
+            print(f"  Warning: leave-x-out directory not found at {path}")
+            print(f"  Contents: {list(path.iterdir()) if path.exists() else 'path does not exist'}")
+            return samples
+        
+        # CURSOR: Load all splits and all data files
+        quote_files = list(leave_x_out.glob("**/quotes.*.txt"))
+        print(f"  Found {len(quote_files)} quote files in leave-x-out splits")
         
         if not quote_files:
-            # CURSOR: Debug - show what files exist
-            all_csvs = list(path.glob("**/*.csv"))
-            print(f"  DEBUG: Total CSV files found = {len(all_csvs)}")
-            if all_csvs:
-                print(f"  DEBUG: First few CSVs = {all_csvs[:5]}")
+            print(f"  Warning: No quote files found")
+            return samples
         
         for quote_file in quote_files:
-            book_dir = quote_file.parent
-            book_txt = book_dir / "book.txt"
-            
-            if not book_txt.exists():
-                continue
+            split_name = quote_file.parent.name  # e.g., "split_0"
+            file_type = quote_file.stem.replace("quotes.", "")  # e.g., "train", "dev", "test"
             
             try:
-                with open(book_txt, 'r', encoding='utf-8', errors='ignore') as f:
-                    book_text = f.read()
-                
-                df = pd.read_csv(quote_file)
-                
-                for _, row in df.iterrows():
-                    try:
-                        quote_start = int(row.get('qBegin', 0))
-                        quote_end = int(row.get('qEnd', len(book_text)))
-                        
-                        # CURSOR: Extract context
-                        ctx_start = max(0, quote_start - 500)
-                        ctx_end = min(len(book_text), quote_end + 500)
-                        
-                        sample = {
-                            'text': book_text[ctx_start:ctx_end],
-                            'quote': row.get('qText', ''),
-                            'quote_start': quote_start - ctx_start,
-                            'quote_end': quote_end - ctx_start,
-                            'speaker': row.get('speaker', ''),
-                            'book_id': book_dir.name,
-                        }
-                        samples.append(sample)
-                    except Exception:
-                        continue
-            except Exception:
+                with open(quote_file, 'r', encoding='utf-8') as f:
+                    for line_num, line in enumerate(f):
+                        try:
+                            cols = line.rstrip().split('\t')
+                            if len(cols) < 6:
+                                continue
+                            
+                            sid = cols[0]  # sentence id like "book_quote_123"
+                            qid = cols[1]  # quote id
+                            eid = int(cols[2])  # gold speaker index
+                            quote_pos = int(cols[3])  # quote token position
+                            cands = json.loads(cols[4])  # [[start, end, name, coref_id], ...]
+                            tokens = cols[5].split(' ')  # context tokens
+                            
+                            # CURSOR: Extract speaker name from candidates using eid
+                            if not cands or eid < 0 or eid >= len(cands):
+                                continue
+                            
+                            gold_cand = cands[eid]
+                            speaker = gold_cand[2] if len(gold_cand) > 2 else ''
+                            if not speaker:
+                                continue
+                            
+                            # CURSOR: Build text from tokens
+                            text = ' '.join(tokens)
+                            
+                            # CURSOR: Extract quote text (rough approximation using quote_pos)
+                            # Quote is marked by special tokens, find quoted content
+                            quote_tokens = []
+                            in_quote = False
+                            for i, tok in enumerate(tokens):
+                                if tok == '"' or tok == "``" or tok == "''":
+                                    if in_quote:
+                                        break
+                                    in_quote = True
+                                    continue
+                                if in_quote:
+                                    quote_tokens.append(tok)
+                            
+                            quote_text = ' '.join(quote_tokens) if quote_tokens else ''
+                            
+                            # CURSOR: Extract candidate names for training
+                            candidate_names = [c[2] for c in cands if len(c) > 2 and c[2]]
+                            
+                            # CURSOR: Extract book_id from sid (format: bookname_quoteid)
+                            book_id = sid.rsplit('_', 1)[0] if '_' in sid else sid
+                            
+                            sample = {
+                                'text': text,
+                                'quote': quote_text,
+                                'speaker': speaker,
+                                'candidates': candidate_names,
+                                'gold_index': eid,
+                                'book_id': book_id,
+                                'split': split_name,
+                                'split_type': file_type,
+                                'quote_id': f"pdnc:{split_name}:{qid}",
+                            }
+                            samples.append(sample)
+                            
+                        except (json.JSONDecodeError, ValueError, IndexError) as e:
+                            continue
+                            
+            except Exception as e:
+                print(f"  Warning: Error reading {quote_file}: {e}")
                 continue
         
+        print(f"  Loaded {len(samples)} samples from PDNC leave-x-out splits")
         return samples
     
     def load_litbank(self, path: Path) -> List[Dict]:
