@@ -226,15 +226,32 @@ class MultiSourceDataLoader:
         """Load PDNC dataset."""
         samples = []
         
+        print(f"  DEBUG: Initial path = {path}")
+        print(f"  DEBUG: Path exists = {path.exists()}")
+        if path.exists():
+            print(f"  DEBUG: Contents = {list(path.iterdir())[:10]}")
+        
         # CURSOR: Handle nested structure when full repo is cloned
         # The speaker-attribution-acl2023 repo has data/pdnc/ inside it
         nested_path = path / "data" / "pdnc"
         if nested_path.exists():
             print(f"  Found nested PDNC data at {nested_path}")
             path = nested_path
+        else:
+            # CURSOR: Also try just 'data' folder (some repo structures)
+            data_path = path / "data"
+            if data_path.exists():
+                print(f"  DEBUG: Found data/ folder, contents = {list(data_path.iterdir())[:10]}")
         
         quote_files = list(path.glob("**/quote_info.csv"))
         print(f"  Found {len(quote_files)} quote_info.csv files")
+        
+        if not quote_files:
+            # CURSOR: Debug - show what files exist
+            all_csvs = list(path.glob("**/*.csv"))
+            print(f"  DEBUG: Total CSV files found = {len(all_csvs)}")
+            if all_csvs:
+                print(f"  DEBUG: First few CSVs = {all_csvs[:5]}")
         
         for quote_file in quote_files:
             book_dir = quote_file.parent
