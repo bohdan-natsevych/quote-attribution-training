@@ -263,13 +263,21 @@ class MultiSourceDataLoader:
         debug_first_line = True
         parse_errors = 0
         
-        for quote_file in quote_files:
+        for quote_file in quote_files[:2]:  # CURSOR: Only process first 2 files for debug
             split_name = quote_file.parent.name  # e.g., "split_0"
             file_type = quote_file.stem.replace("quotes.", "")  # e.g., "train", "dev", "test"
             
+            # CURSOR: Debug file info
+            file_size = quote_file.stat().st_size if quote_file.exists() else 0
+            print(f"  Processing: {quote_file.name} ({file_size} bytes)")
+            
             try:
                 with open(quote_file, 'r', encoding='utf-8') as f:
-                    for line_num, line in enumerate(f):
+                    lines = f.readlines()
+                    print(f"    Read {len(lines)} lines")
+                    if lines:
+                        print(f"    First line preview: {lines[0][:100]}...")
+                    for line_num, line in enumerate(lines):
                         try:
                             cols = line.rstrip().split('\t')
                             
