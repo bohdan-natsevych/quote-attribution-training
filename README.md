@@ -75,12 +75,46 @@ The notebook supports training multiple folds for cross-validation and ensemble 
 - **Colab**: 1x T4 GPU (free tier available, Pro+ recommended for longer sessions)
 - **Local**: NVIDIA GPU with 24GB+ VRAM (e.g., RTX 3090, RTX 4090, A100)
 
-## Dataset
+## Datasets
 
-The notebook automatically downloads required datasets:
+The training pipeline supports multiple datasets. Configure which datasets to use by setting `DATASETS` in the notebook:
 
-- **Target 1**: PDNC dataset (~35k quotes with 5-fold cross-validation splits) from `speaker-attribution-acl2023` repository
-- **Target 2**: Automatically clones additional datasets (LitBank, DirectQuote) when `use_multi_source=True`
+```python
+# Examples:
+DATASETS = ["pdnc"]                           # Single dataset (default)
+DATASETS = ["pdnc", "litbank"]                # Multiple datasets
+DATASETS = ["pdnc", "litbank", "directquote"] # All literature + news
+```
+
+### Available Datasets
+
+| Dataset | Genre | Samples | Description |
+|---------|-------|---------|-------------|
+| **pdnc** | Literature | ~35,000 | PDNC (22 novels) - Primary training set |
+| **litbank** | Classic Literature | ~3,000 | 100 classic texts with quote annotations |
+| **directquote** | News | ~10,000 | News quotes from 13 media sources |
+| **quotebank** | News | ~10,000* | Large-scale news quotes (requires manual download) |
+
+\* Quotebank samples 10,000 from a much larger dataset.
+
+### Dataset Download
+
+Datasets are downloaded automatically when selected, except Quotebank which requires manual download:
+
+| Dataset | Auto Download | Source |
+|---------|--------------|--------|
+| pdnc | ✅ Yes | [speaker-attribution-acl2023](https://github.com/Priya22/speaker-attribution-acl2023) |
+| litbank | ✅ Yes | [dbamman/litbank](https://github.com/dbamman/litbank) |
+| directquote | ✅ Yes | [THUNLP-MT/DirectQuote](https://github.com/THUNLP-MT/DirectQuote) |
+| quotebank | ❌ Manual | [Zenodo](https://zenodo.org/record/4277311) |
+
+To list available datasets programmatically:
+
+```python
+from data.multi_source_data import MultiSourceDataLoader
+MultiSourceDataLoader.list_available_datasets()
+```
+
 
 ## Configuration
 
