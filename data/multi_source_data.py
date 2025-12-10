@@ -226,11 +226,11 @@ class MultiSourceDataLoader:
         """Load PDNC dataset from training splits.
         
         PDNC data format (tab-separated):
-        - cols[0] = sentence id (book_quote_id)
-        - cols[1] = quote id
-        - cols[2] = entity id (gold speaker index in candidates)
+        - cols[0] = book name (e.g., "AgeOfInnocence")
+        - cols[1] = quote id (e.g., "Q0-0")
+        - cols[2] = gold speaker character ID (e.g., "CHAR_35")
         - cols[3] = quote token position
-        - cols[4] = candidates (JSON array of [start, end, name, coref_id])
+        - cols[4] = candidates (JSON array: [[start, end, is_gold, "CHAR_ID"], ...])
         - cols[5] = text (space-separated tokens)
         
         Data location: training/data/pdnc/leave-x-out/split_N/quotes.{train,dev,test}.txt
@@ -239,7 +239,6 @@ class MultiSourceDataLoader:
         samples = []
         
         # CURSOR: Handle nested structure when full repo is cloned
-        # The speaker-attribution-acl2023 repo has training/data/pdnc inside it
         training_pdnc = path / "training" / "data" / "pdnc"
         if training_pdnc.exists():
             print(f"  Found PDNC training data at {training_pdnc}")
@@ -263,60 +262,69 @@ class MultiSourceDataLoader:
         debug_first_line = True
         parse_errors = 0
         
-        for quote_file in quote_files[:2]:  # CURSOR: Only process first 2 files for debug
+        for quote_file in quote_files:
             split_name = quote_file.parent.name  # e.g., "split_0"
             file_type = quote_file.stem.replace("quotes.", "")  # e.g., "train", "dev", "test"
-            
-            # CURSOR: Debug file info
-            file_size = quote_file.stat().st_size if quote_file.exists() else 0
-            print(f"  Processing: {quote_file.name} ({file_size} bytes)")
             
             try:
                 with open(quote_file, 'r', encoding='utf-8') as f:
                     lines = f.readlines()
-                    print(f"    Read {len(lines)} lines")
-                    if lines:
-                        print(f"    First line preview: {lines[0][:100]}...")
+                    
+                    if debug_first_line and lines:
+                        print(f"  Processing: {quote_file.name} ({len(lines)} lines)")
+                        print(f"    First line preview: {lines[0][:120]}...")
+                    
                     for line_num, line in enumerate(lines):
                         try:
                             cols = line.rstrip().split('\t')
                             
-                            # CURSOR: Debug first line to see format
-                            if debug_first_line:
-                                print(f"  DEBUG: First line has {len(cols)} columns")
-                                print(f"  DEBUG: cols[:3] = {cols[:3] if len(cols) >= 3 else cols}")
-                                debug_first_line = False
-                            
                             if len(cols) < 6:
                                 parse_errors += 1
-                                if parse_errors <= 3:
-                                    print(f"  DEBUG: Line {line_num} has only {len(cols)} cols")
                                 continue
                             
-                            sid = cols[0]  # sentence id like "book_quote_123"
-                            qid = cols[1]  # quote id
-                            eid = int(cols[2])  # gold speaker index
-                            quote_pos = int(cols[3])  # quote token position
-                            cands = json.loads(cols[4])  # [[start, end, name, coref_id], ...]
+                            book_name = cols[0]  # e.g., "AgeOfInnocence"
+                            qid = cols[1]  # e.g., "Q0-0"
+                            gold_char_id = cols[2]  # e.g., "CHAR_35" (string, not int)
+                            # cols[3] = quote token position (not used)
+                            cands = json.loads(cols[4])  # [[start, end, is_gold, "CHAR_ID"], ...]
                             tokens = cols[5].split(' ')  # context tokens
                             
-                            # CURSOR: Extract speaker name from candidates using eid
-                            if not cands or eid < 0 or eid >= len(cands):
-                                continue
+                            # CURSOR: Find gold speaker in candidates by matching character ID
+                            # Format: [start_idx, end_idx, is_gold_flag, "CHAR_ID"]
+                            gold_index = -1
+                            speaker = gold_char_id  # Default to char ID if no match found
                             
-                            gold_cand = cands[eid]
-                            speaker = gold_cand[2] if len(gold_cand) > 2 else ''
-                            if not speaker:
+                            for idx, cand in enumerate(cands):
+                                if len(cand) >= 4:
+                                    cand_char_id = cand[3]  # Character ID is 4th element
+                                    if cand_char_id == gold_char_id:
+                                        gold_index = idx
+                                        break
+                                    # Also check if is_gold flag is set
+                                    if cand[2] == 1:
+                                        gold_index = idx
+                                        speaker = cand_char_id
+                            
+                            if gold_index < 0:
+                                # Fallback: use first candidate with is_gold=1
+                                for idx, cand in enumerate(cands):
+                                    if len(cand) >= 3 and cand[2] == 1:
+                                        gold_index = idx
+                                        if len(cand) >= 4:
+                                            speaker = cand[3]
+                                        break
+                            
+                            if gold_index < 0:
+                                parse_errors += 1
                                 continue
                             
                             # CURSOR: Build text from tokens
                             text = ' '.join(tokens)
                             
-                            # CURSOR: Extract quote text (rough approximation using quote_pos)
-                            # Quote is marked by special tokens, find quoted content
+                            # CURSOR: Extract quote text by finding quoted content
                             quote_tokens = []
                             in_quote = False
-                            for i, tok in enumerate(tokens):
+                            for tok in tokens:
                                 if tok == '"' or tok == "``" or tok == "''":
                                     if in_quote:
                                         break
@@ -327,19 +335,16 @@ class MultiSourceDataLoader:
                             
                             quote_text = ' '.join(quote_tokens) if quote_tokens else ''
                             
-                            # CURSOR: Extract candidate names for training
-                            candidate_names = [c[2] for c in cands if len(c) > 2 and c[2]]
-                            
-                            # CURSOR: Extract book_id from sid (format: bookname_quoteid)
-                            book_id = sid.rsplit('_', 1)[0] if '_' in sid else sid
+                            # CURSOR: Extract candidate character IDs for training
+                            candidate_names = [c[3] for c in cands if len(c) >= 4]
                             
                             sample = {
                                 'text': text,
                                 'quote': quote_text,
                                 'speaker': speaker,
                                 'candidates': candidate_names,
-                                'gold_index': eid,
-                                'book_id': book_id,
+                                'gold_index': gold_index,
+                                'book_id': book_name,
                                 'split': split_name,
                                 'split_type': file_type,
                                 'quote_id': f"pdnc:{split_name}:{qid}",
@@ -348,9 +353,11 @@ class MultiSourceDataLoader:
                             
                         except (json.JSONDecodeError, ValueError, IndexError) as e:
                             parse_errors += 1
-                            if parse_errors <= 5:
+                            if debug_first_line and parse_errors <= 3:
                                 print(f"  DEBUG: Parse error line {line_num}: {e}")
                             continue
+                    
+                    debug_first_line = False
                             
             except Exception as e:
                 print(f"  Warning: Error reading {quote_file}: {e}")
