@@ -260,6 +260,9 @@ class MultiSourceDataLoader:
             print(f"  Warning: No quote files found")
             return samples
         
+        debug_first_line = True
+        parse_errors = 0
+        
         for quote_file in quote_files:
             split_name = quote_file.parent.name  # e.g., "split_0"
             file_type = quote_file.stem.replace("quotes.", "")  # e.g., "train", "dev", "test"
@@ -269,7 +272,17 @@ class MultiSourceDataLoader:
                     for line_num, line in enumerate(f):
                         try:
                             cols = line.rstrip().split('\t')
+                            
+                            # CURSOR: Debug first line to see format
+                            if debug_first_line:
+                                print(f"  DEBUG: First line has {len(cols)} columns")
+                                print(f"  DEBUG: cols[:3] = {cols[:3] if len(cols) >= 3 else cols}")
+                                debug_first_line = False
+                            
                             if len(cols) < 6:
+                                parse_errors += 1
+                                if parse_errors <= 3:
+                                    print(f"  DEBUG: Line {line_num} has only {len(cols)} cols")
                                 continue
                             
                             sid = cols[0]  # sentence id like "book_quote_123"
@@ -326,13 +339,16 @@ class MultiSourceDataLoader:
                             samples.append(sample)
                             
                         except (json.JSONDecodeError, ValueError, IndexError) as e:
+                            parse_errors += 1
+                            if parse_errors <= 5:
+                                print(f"  DEBUG: Parse error line {line_num}: {e}")
                             continue
                             
             except Exception as e:
                 print(f"  Warning: Error reading {quote_file}: {e}")
                 continue
         
-        print(f"  Loaded {len(samples)} samples from PDNC leave-x-out splits")
+        print(f"  Loaded {len(samples)} samples, parse_errors={parse_errors}")
         return samples
     
     def load_litbank(self, path: Path) -> List[Dict]:
