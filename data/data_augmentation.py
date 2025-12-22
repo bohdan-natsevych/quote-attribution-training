@@ -107,15 +107,20 @@ class QuoteAugmenter:
         # CURSOR: Initialize nlpaug augmenters if available
         self.nlpaug_synonym = None
         self.nlpaug_insert = None
-        if NLPAUG_AVAILABLE:
-            try:
-                self.nlpaug_synonym = naw.SynonymAug(aug_src='wordnet')
-                self.nlpaug_insert = naw.ContextualWordEmbsAug(
-                    model_path='bert-base-uncased',
-                    action='insert'
-                )
-            except Exception:
-                pass  # Fall back to basic augmentation
+                # CURSOR: Do NOT eagerly construct nlpaug contextual augmenters here.
+        # CURSOR: `ContextualWordEmbsAug(model_path='bert-base-uncased', ...)` pulls a full transformer
+        # CURSOR: model into memory (and may grab GPU VRAM). The current augmentation pipeline below
+        # CURSOR: uses only lightweight, deterministic operations (WordNet + simple edits), so the
+        # CURSOR: heavy contextual augmenter would be unused overhead and can destabilize notebooks.
+        # if NLPAUG_AVAILABLE:
+        #     try:
+        #         self.nlpaug_synonym = naw.SynonymAug(aug_src='wordnet')
+        #         self.nlpaug_insert = naw.ContextualWordEmbsAug(
+        #             model_path='bert-base-uncased',
+        #             action='insert'
+        #         )
+        #     except Exception:
+        #         pass  # Fall back to basic augmentation
     
     def get_synonyms(self, word: str) -> List[str]:
         """Get synonyms for a word using WordNet."""
