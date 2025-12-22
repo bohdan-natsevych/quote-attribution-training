@@ -14,7 +14,7 @@ Expected accuracy: 80-85% on PDNC test set
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from transformers import DebertaV2Model, DebertaV2Tokenizer, DebertaV2Config
+from transformers import DebertaV2Model, DebertaV2Tokenizer, DebertaV2Config, PreTrainedTokenizerBase
 from typing import Optional, Tuple, Dict, List
 
 
@@ -64,8 +64,8 @@ class MaxPerformanceSpeakerModel(nn.Module):
         self.encoder = DebertaV2Model.from_pretrained(model_name)
         self.hidden_size = self.encoder.config.hidden_size  # 1024 for large
         
-        # CURSOR: Initialize tokenizer and add special tokens
-        self.tokenizer = DebertaV2Tokenizer.from_pretrained(model_name)
+        # CURSOR: Initialize tokenizer and add special tokens; use_fast=True for Rust tokenizer (3-10x faster)
+        self.tokenizer = DebertaV2Tokenizer.from_pretrained(model_name, use_fast=True)
         num_added = self.tokenizer.add_tokens(self.SPECIAL_TOKENS)
         if num_added > 0:
             self.encoder.resize_token_embeddings(len(self.tokenizer))
@@ -155,7 +155,7 @@ class MaxPerformanceSpeakerModel(nn.Module):
                 if module.bias is not None:
                     nn.init.zeros_(module.bias)
     
-    def get_tokenizer(self) -> DebertaV2Tokenizer:
+    def get_tokenizer(self) -> PreTrainedTokenizerBase:
         """Return the tokenizer with special tokens."""
         return self.tokenizer
     
