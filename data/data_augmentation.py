@@ -130,6 +130,27 @@ class QuoteAugmenter:
                     synonyms.append(synonym)
         
         return list(set(synonyms))[:5]  # Limit to 5 synonyms
+
+    @staticmethod
+    def _get_word_positions(text: str) -> Tuple[List[str], List[Tuple[int, int]]]:
+        """CURSOR: Return (words, [(start,end)]) for simple whitespace tokenization."""
+        words = text.split()
+        positions: List[Tuple[int, int]] = []
+        pos = 0
+        for word in words:
+            start = text.find(word, pos)
+            end = start + len(word)
+            positions.append((start, end))
+            pos = end
+        return words, positions
+
+    @staticmethod
+    def _overlaps_protected(start: int, end: int, protected_spans: List[Tuple[int, int]]) -> bool:
+        """CURSOR: True if [start,end) overlaps any protected span."""
+        for ps, pe in protected_spans:
+            if start < pe and end > ps:
+                return True
+        return False
     
     def synonym_replace(
         self,
@@ -148,22 +169,12 @@ class QuoteAugmenter:
         Returns:
             Augmented text
         """
-        words = text.split()
-        word_positions = []
-        pos = 0
-        for word in words:
-            start = text.find(word, pos)
-            end = start + len(word)
-            word_positions.append((start, end))
-            pos = end
+        words, word_positions = self._get_word_positions(text)
         
         # CURSOR: Find words that can be replaced (not in protected spans)
         replaceable = []
         for i, (start, end) in enumerate(word_positions):
-            is_protected = any(
-                start >= ps and end <= pe
-                for ps, pe in protected_spans
-            )
+            is_protected = self._overlaps_protected(start, end, protected_spans)
             if not is_protected and len(words[i]) > 3:
                 replaceable.append(i)
         
@@ -206,13 +217,29 @@ class QuoteAugmenter:
             'indeed', 'certainly', 'perhaps', 'probably', 'surely'
         ]
         
-        words = text.split()
-        
+        words, positions = self._get_word_positions(text)
+        if not words:
+            return text
+
+        # CURSOR: Choose insertion positions outside protected spans (best-effort).
+        def insertion_char_pos(insert_idx: int) -> int:
+            if insert_idx <= 0:
+                return 0
+            # Approximate insertion point as right after the previous token.
+            return positions[min(insert_idx - 1, len(positions) - 1)][1]
+
+        allowed_positions = [
+            i for i in range(len(words) + 1)
+            if not self._overlaps_protected(insertion_char_pos(i), insertion_char_pos(i) + 1, protected_spans)
+        ]
+        if not allowed_positions:
+            return text
+
         for _ in range(n):
-            insert_pos = random.randint(0, len(words))
+            insert_pos = random.choice(allowed_positions)
             filler = random.choice(filler_words)
             words.insert(insert_pos, filler)
-        
+
         return ' '.join(words)
     
     def random_swap(
@@ -232,15 +259,28 @@ class QuoteAugmenter:
         Returns:
             Augmented text
         """
-        words = text.split()
-        
+        words, positions = self._get_word_positions(text)
         if len(words) < 2:
             return text
-        
+
+        # CURSOR: Swap only unprotected adjacent pairs.
+        def is_word_protected(word_idx: int) -> bool:
+            if not (0 <= word_idx < len(positions)):
+                return False
+            start, end = positions[word_idx]
+            return self._overlaps_protected(start, end, protected_spans)
+
+        swappable = [
+            i for i in range(len(words) - 1)
+            if not is_word_protected(i) and not is_word_protected(i + 1)
+        ]
+        if not swappable:
+            return text
+
         for _ in range(n):
-            idx = random.randint(0, len(words) - 2)
+            idx = random.choice(swappable)
             words[idx], words[idx + 1] = words[idx + 1], words[idx]
-        
+
         return ' '.join(words)
     
     def random_delete(
@@ -260,17 +300,32 @@ class QuoteAugmenter:
         Returns:
             Augmented text
         """
-        words = text.split()
-        
+        words, positions = self._get_word_positions(text)
         if len(words) < 3:
             return text
-        
-        # CURSOR: Keep at least half the words
-        new_words = [
-            w for w in words
-            if random.random() > p or len([x for x in words if random.random() > p]) < len(words) // 2
+
+        protected_mask = [
+            self._overlaps_protected(start, end, protected_spans)
+            for start, end in positions
         ]
-        
+        unprotected_indices = [i for i, is_prot in enumerate(protected_mask) if not is_prot]
+        if not unprotected_indices:
+            return text
+
+        keep_mask = protected_mask[:]  # protected always kept
+        for i in unprotected_indices:
+            keep_mask[i] = (random.random() > p)
+
+        # CURSOR: Ensure we don't delete too aggressively (keep at least half of unprotected words).
+        min_keep_unprotected = max(1, len(unprotected_indices) // 2)
+        kept_unprotected = [i for i in unprotected_indices if keep_mask[i]]
+        if len(kept_unprotected) < min_keep_unprotected:
+            deleted_unprotected = [i for i in unprotected_indices if not keep_mask[i]]
+            random.shuffle(deleted_unprotected)
+            for i in deleted_unprotected[: (min_keep_unprotected - len(kept_unprotected))]:
+                keep_mask[i] = True
+
+        new_words = [w for i, w in enumerate(words) if keep_mask[i]]
         return ' '.join(new_words) if new_words else text
     
     def context_extend(

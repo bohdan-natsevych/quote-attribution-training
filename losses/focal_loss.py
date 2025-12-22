@@ -28,7 +28,8 @@ class FocalLoss(nn.Module):
         self,
         gamma: float = 2.0,
         alpha: Optional[torch.Tensor] = None,
-        reduction: str = 'mean'
+        reduction: str = 'mean',
+        ignore_index: int = -100
     ):
         """
         Initialize Focal Loss.
@@ -42,6 +43,7 @@ class FocalLoss(nn.Module):
         self.gamma = gamma
         self.alpha = alpha
         self.reduction = reduction
+        self.ignore_index = ignore_index
     
     def forward(
         self,
@@ -62,32 +64,39 @@ class FocalLoss(nn.Module):
         if inputs.dim() == 1:
             # Binary case - convert to 2-class
             inputs = torch.stack([1 - inputs, inputs], dim=-1)
-        
+
+        valid = targets != self.ignore_index
+        if valid.sum().item() == 0:
+            return inputs.sum() * 0.0
+
+        v_inputs = inputs[valid]
+        v_targets = targets[valid]
+
         # Compute standard cross-entropy loss (no reduction)
-        ce_loss = F.cross_entropy(inputs, targets, reduction='none')
-        
-        # Get probabilities
-        p = F.softmax(inputs, dim=-1)
-        p_t = p.gather(1, targets.unsqueeze(-1)).squeeze(-1)
-        
+        ce_loss = F.cross_entropy(v_inputs, v_targets, reduction='none')
+
+        # Get probabilities for focal weighting
+        p = F.softmax(v_inputs, dim=-1)
+        p_t = p.gather(1, v_targets.unsqueeze(-1)).squeeze(-1)
+
         # CURSOR: Compute focal weight: (1 - p_t)^gamma
         focal_weight = (1 - p_t) ** self.gamma
-        
-        # Apply focal weight to cross-entropy loss
         focal_loss = focal_weight * ce_loss
-        
+
         # CURSOR: Apply class weights if provided
         if self.alpha is not None:
-            alpha_t = self.alpha.to(inputs.device).gather(0, targets)
+            alpha_t = self.alpha.to(v_inputs.device).gather(0, v_targets)
             focal_loss = alpha_t * focal_loss
-        
-        # Apply reduction
+
         if self.reduction == 'mean':
             return focal_loss.mean()
-        elif self.reduction == 'sum':
+        if self.reduction == 'sum':
             return focal_loss.sum()
-        else:
-            return focal_loss
+
+        # reduction='none' -> return a vector aligned with batch size
+        out = torch.zeros(targets.shape[0], device=inputs.device, dtype=focal_loss.dtype)
+        out[valid] = focal_loss
+        return out
 
 
 class LabelSmoothingLoss(nn.Module):
@@ -100,7 +109,8 @@ class LabelSmoothingLoss(nn.Module):
     def __init__(
         self,
         smoothing: float = 0.1,
-        reduction: str = 'mean'
+        reduction: str = 'mean',
+        ignore_index: int = -100
     ):
         """
         Initialize Label Smoothing Loss.
@@ -112,6 +122,7 @@ class LabelSmoothingLoss(nn.Module):
         super().__init__()
         self.smoothing = smoothing
         self.reduction = reduction
+        self.ignore_index = ignore_index
     
     def forward(
         self,
@@ -128,26 +139,27 @@ class LabelSmoothingLoss(nn.Module):
         Returns:
             Label smoothing loss value
         """
-        num_classes = inputs.size(-1)
-        
-        # CURSOR: Create smoothed target distribution
-        # One-hot encode targets
-        smooth_targets = torch.zeros_like(inputs)
-        smooth_targets.fill_(self.smoothing / (num_classes - 1))
-        smooth_targets.scatter_(1, targets.unsqueeze(-1), 1 - self.smoothing)
-        
-        # Compute log probabilities
-        log_probs = F.log_softmax(inputs, dim=-1)
-        
-        # CURSOR: Compute KL divergence (which equals cross-entropy for one-hot)
-        loss = -(smooth_targets * log_probs).sum(dim=-1)
-        
+        valid = targets != self.ignore_index
+        if valid.sum().item() == 0:
+            return inputs.sum() * 0.0
+
+        v_inputs = inputs[valid]
+        v_targets = targets[valid]
+
+        # CURSOR: Efficient label-smoothed NLL without constructing dense one-hot targets.
+        log_probs = F.log_softmax(v_inputs, dim=-1)
+        nll_loss = -log_probs.gather(dim=-1, index=v_targets.unsqueeze(-1)).squeeze(-1)
+        smooth_loss = -log_probs.mean(dim=-1)
+        loss = (1.0 - self.smoothing) * nll_loss + self.smoothing * smooth_loss
+
         if self.reduction == 'mean':
             return loss.mean()
-        elif self.reduction == 'sum':
+        if self.reduction == 'sum':
             return loss.sum()
-        else:
-            return loss
+
+        out = torch.zeros(targets.shape[0], device=inputs.device, dtype=loss.dtype)
+        out[valid] = loss
+        return out
 
 
 class RDropLoss(nn.Module):
@@ -247,7 +259,8 @@ class CombinedLoss(nn.Module):
         class_weights: Optional[torch.Tensor] = None,
         use_focal: bool = True,
         use_label_smoothing: bool = True,
-        use_r_drop: bool = True
+        use_r_drop: bool = True,
+        ignore_index: int = -100
     ):
         """
         Initialize Combined Loss.
@@ -266,38 +279,59 @@ class CombinedLoss(nn.Module):
         self.use_focal = use_focal
         self.use_label_smoothing = use_label_smoothing
         self.use_r_drop = use_r_drop
+        self.ignore_index = ignore_index
+        self.focal_gamma = focal_gamma
+        self.label_smoothing = label_smoothing
+        self.class_weights = class_weights
+        self.r_drop_alpha = r_drop_alpha
         
-        # CURSOR: Initialize loss components
-        if use_focal:
-            self.focal_loss = FocalLoss(
-                gamma=focal_gamma,
-                alpha=class_weights,
-                reduction='mean'
-            )
-        
-        if use_label_smoothing:
-            self.label_smoothing_loss = LabelSmoothingLoss(
-                smoothing=label_smoothing,
-                reduction='mean'
-            )
-        
-        if use_r_drop:
-            self.r_drop = RDropLoss(alpha=r_drop_alpha)
-        
-        # Fallback to standard cross-entropy
+        # CURSOR: Keep modules for backwards compatibility / external callers.
+        self.focal_loss = FocalLoss(
+            gamma=focal_gamma,
+            alpha=class_weights,
+            reduction='mean',
+            ignore_index=ignore_index
+        )
+        self.label_smoothing_loss = LabelSmoothingLoss(
+            smoothing=label_smoothing,
+            reduction='mean',
+            ignore_index=ignore_index
+        )
+        self.r_drop = RDropLoss(alpha=r_drop_alpha)
         self.ce_loss = nn.CrossEntropyLoss(
             weight=class_weights,
-            reduction='mean'
+            reduction='mean',
+            ignore_index=ignore_index
         )
     
     def get_base_criterion(self) -> nn.Module:
-        """Get the base loss criterion (focal or label smoothing)."""
-        if self.use_focal:
-            return self.focal_loss
-        elif self.use_label_smoothing:
+        """Get the base loss criterion for external callers."""
+        if self.use_label_smoothing and self.label_smoothing > 0:
             return self.label_smoothing_loss
+        if self.use_focal and self.focal_gamma > 0:
+            return self.focal_loss
+        return self.ce_loss
+
+    def _per_example_loss(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+        """CURSOR: Compute per-example loss with optional label smoothing + focal weighting."""
+        log_probs = F.log_softmax(logits, dim=-1)
+        nll = -log_probs.gather(dim=-1, index=targets.unsqueeze(-1)).squeeze(-1)
+
+        if self.use_label_smoothing and self.label_smoothing > 0:
+            smooth = -log_probs.mean(dim=-1)
+            loss = (1.0 - self.label_smoothing) * nll + self.label_smoothing * smooth
         else:
-            return self.ce_loss
+            loss = nll
+
+        if self.use_focal and self.focal_gamma > 0:
+            p_t = log_probs.exp().gather(dim=-1, index=targets.unsqueeze(-1)).squeeze(-1)
+            loss = ((1.0 - p_t) ** self.focal_gamma) * loss
+
+        if self.class_weights is not None:
+            alpha_t = self.class_weights.to(logits.device).gather(0, targets)
+            loss = alpha_t * loss
+
+        return loss
     
     def forward(
         self,
@@ -316,17 +350,23 @@ class CombinedLoss(nn.Module):
         Returns:
             Combined loss value
         """
-        criterion = self.get_base_criterion()
-        
-        # CURSOR: If R-Drop is enabled and we have two forward passes
-        if self.use_r_drop and logits2 is not None:
-            total_loss, ce_loss, kl_loss = self.r_drop(
-                logits, logits2, targets, criterion
-            )
-            return total_loss
-        
-        # CURSOR: Single forward pass - use base criterion
-        return criterion(logits, targets)
+        valid = targets != self.ignore_index
+        if valid.sum().item() == 0:
+            return logits.sum() * 0.0
+
+        v_logits = logits[valid]
+        v_targets = targets[valid]
+
+        # CURSOR: Optional R-Drop when logits2 is provided and alpha > 0.
+        if self.use_r_drop and logits2 is not None and self.r_drop_alpha > 0:
+            v_logits2 = logits2[valid]
+            loss1 = self._per_example_loss(v_logits, v_targets).mean()
+            loss2 = self._per_example_loss(v_logits2, v_targets).mean()
+            ce_loss = (loss1 + loss2) / 2.0
+            kl_loss = self.r_drop.compute_kl_divergence(v_logits, v_logits2)
+            return ce_loss + self.r_drop_alpha * kl_loss
+
+        return self._per_example_loss(v_logits, v_targets).mean()
     
     def forward_with_r_drop(
         self,

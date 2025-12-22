@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from enum import Enum
 from collections import defaultdict
 
+import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader, Sampler
 
@@ -192,7 +193,8 @@ class CurriculumSampler(Sampler):
         total_epochs: int,
         current_epoch: int = 0,
         batch_size: int = 8,
-        seed: Optional[int] = None
+        seed: Optional[int] = None,
+        sample_weights: Optional[List[float]] = None
     ):
         """
         Initialize curriculum sampler.
@@ -210,6 +212,8 @@ class CurriculumSampler(Sampler):
         self.total_epochs = total_epochs
         self.current_epoch = current_epoch
         self.batch_size = batch_size
+        self.seed = seed
+        self.sample_weights = sample_weights
         
         if seed is not None:
             random.seed(seed)
@@ -260,38 +264,39 @@ class CurriculumSampler(Sampler):
             
             for idx in indices:
                 pool.append(idx)
-                weights.append(weight)
+                # CURSOR: Optionally incorporate per-sample weights (e.g., genre balancing).
+                if self.sample_weights is not None and 0 <= idx < len(self.sample_weights):
+                    weights.append(weight * float(self.sample_weights[idx]))
+                else:
+                    weights.append(weight)
         
-        # CURSOR: Normalize weights
-        total_weight = sum(weights)
-        if total_weight > 0:
-            weights = [w / total_weight for w in weights]
-        
-        # CURSOR: Sample indices
-        num_samples = len(pool)
-        if num_samples == 0:
+        # CURSOR: Sample indices in a weighted order (without replacement) using numpy for speed.
+        if not pool:
             return iter([])
-        
-        # Weighted sampling without replacement
-        sampled = []
-        pool_indices = list(range(len(pool)))
-        
-        while len(sampled) < num_samples and pool_indices:
-            # Simple weighted selection
-            r = random.random() * sum(weights[i] for i in pool_indices)
-            cumsum = 0
-            for pi in pool_indices:
-                cumsum += weights[pi]
-                if cumsum >= r:
-                    sampled.append(pool[pi])
-                    pool_indices.remove(pi)
-                    break
-        
-        return iter(sampled)
+
+        if len(pool) == 1:
+            return iter(pool)
+
+        weight_arr = np.asarray(weights, dtype=np.float64)
+        total_weight = float(weight_arr.sum())
+        if total_weight <= 0:
+            return iter(pool)
+
+        weight_arr = weight_arr / total_weight
+
+        # CURSOR: Use a deterministic RNG per epoch when seed is provided.
+        rng_seed = None if self.seed is None else int(self.seed) + int(self.current_epoch)
+        rng = np.random.default_rng(rng_seed)
+
+        order = rng.choice(len(pool), size=len(pool), replace=False, p=weight_arr)
+        # CURSOR: Advance epoch automatically as a fallback when the caller doesn't invoke set_epoch.
+        self.current_epoch += 1
+        return iter([pool[i] for i in order.tolist()])
     
     def __len__(self) -> int:
-        """Return total number of samples."""
-        return self.total_samples
+        """CURSOR: Return number of samples available at the current curriculum stage."""
+        available = self.get_available_difficulties()
+        return sum(len(self.difficulty_indices.get(d, [])) for d in available)
 
 
 class CurriculumDataset(Dataset):

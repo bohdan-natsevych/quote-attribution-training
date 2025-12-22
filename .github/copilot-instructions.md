@@ -21,8 +21,8 @@ This is the **Quote Attribution Training Suite** for the [Audio Book Generator](
   - Colab: 1xT4 GPU, Google Drive storage, checkpoints every 300 steps, gradient accumulation
 - **Configuration**: Uses `TrainingConfig` dataclass with validation (replaces nested dicts)
   - Set `TARGET_LEVEL = 1|2` for training complexity/accuracy tradeoff
-  - Target 1: PDNC dataset only, 80-85% accuracy, 4-6 hours/fold
-  - Target 2: Multi-source data (PDNC + LitBank + DirectQuote), 85-88% accuracy, 6-8 hours/fold
+  - Target 1: PDNC dataset only (6 epochs), 80-85% accuracy, 4-6 hours/fold on 2xT4
+  - Target 2: Multi-source data (PDNC + LitBank + DirectQuote, 8 epochs), 85-88% accuracy, 6-8 hours/fold
   - Target 3: Raises `NotImplementedError` - use [models/ensemble.py](models/ensemble.py) separately
 - **Fold training**: `FOLD_SELECTION = "all"` trains all 5 folds; `[0, 2]` trains specific folds
 - **Auto resume**: Training resumes from latest checkpoint automatically, skips completed folds

@@ -2,64 +2,76 @@
 
 > **Part of the [Audio Book Generator](https://github.com/bohdan-natsevych/audiobook-generator) project**
 
-This repository contains the training pipeline for speaker attribution models used in the audiobook-generator project. It trains DeBERTa-based models to identify which character speaks each quote in literary texts, enabling high-quality audiobook generation with character-specific voices.
+This repository contains the training pipeline for speaker attribution models used in the audiobook-generator project. It trains DeBERTa-v3-large models to identify which character speaks each quote in literary texts, enabling character-specific voice generation for audiobooks.
 
 ## Overview
 
-This training suite implements a quote attribution system using DeBERTa-v3-large with specialized architecture for speaker identification. The unified notebook (`booknlp_max_unified.ipynb`) supports both Kaggle and Colab environments with automatic configuration.
+This training suite implements a quote attribution system using DeBERTa-v3-large with specialized architecture including multi-layer BiLSTM, multi-head cross-attention, transformer encoder, and deep classifier. The unified notebook ([booknlp_max_unified.ipynb](booknlp_max_unified.ipynb)) supports both Kaggle and Colab environments with automatic configuration switching via `RUN_ENV` parameter.
 
 ## Quick Start
 
-1) Open `booknlp_max_unified.ipynb`
-2) Set `RUN_ENV = "kaggle"` or `"colab"` (default: kaggle)
-3) Set `TARGET_LEVEL = 1|2|3` in the config cell
-4) Set `FOLD_SELECTION = "all"` to train all 5 folds, or `[0, 1, 2]` for specific folds
-5) Run all cells - datasets download automatically
+1. Open [booknlp_max_unified.ipynb](booknlp_max_unified.ipynb)
+2. Set `RUN_ENV = "kaggle"` or `"colab"` in first config cell (default: kaggle)
+3. Set `TARGET_LEVEL = 1` or `2` (start with 1)
+4. Set `FOLD_SELECTION = "all"` to train all 5 folds, or `[0, 1, 2]` for specific folds
+5. Run all cells - datasets auto-download, training auto-resumes if interrupted
 
 ### Environment Profiles
 
-- **Kaggle**: T4 x2 GPUs, `/kaggle/working` storage, multi-GPU training via `accelerate`, checkpoints every 500 steps
-- **Colab**: Single T4 GPU, Google Drive storage at `/content/drive/MyDrive/quote_attribution`, checkpoints every 300 steps, gradient accumulation for larger effective batch size
+- **Kaggle**: 2xT4 GPUs, multi-GPU via `accelerate`, checkpoints every 500 steps, 12-hour sessions
+- **Colab**: 1xT4 GPU, Google Drive storage, checkpoints every 300 steps, gradient accumulation
+
+Training automatically resumes from latest checkpoint if interrupted. Completed folds are skipped.
 
 ## Model Architecture
 
-The training pipeline implements:
-- **DeBERTa-v3-large** with quote/candidate masks and special tokens ([QUOTE], [ALTQUOTE], [PAR])
-- **Candidate-level softmax** with label smoothing
-- **Optional R-Drop** regularization for improved robustness
-- **Temperature scaling** for confidence calibration
-- **Curriculum learning** with difficulty-based sampling
-- **Data augmentation** using synonym replacement
-- **Gradient checkpointing** and FP16 mixed precision training
-- **Auto checkpoint/resume** functionality
+Implemented in [models/max_performance_model.py](models/max_performance_model.py):
+
+- **Base**: DeBERTa-v3-large (1024 hidden size) from `microsoft/deberta-v3-large`
+- **Special tokens**: `[QUOTE]`, `[ALTQUOTE]`, `[PAR]` for structural understanding
+- **Additional layers**:
+  - Multi-layer BiLSTM for context encoding
+  - Multi-head cross-attention (quote attends to candidates)
+  - Transformer encoder for candidate interaction
+  - Deep classifier (2048→1024→512→1) with residual connections
+- **Training features**:
+  - Focal loss + label smoothing + optional R-Drop regularization
+  - Candidate-level softmax with hard negative mining
+  - FP16 mixed precision + gradient checkpointing
+  - Temperature scaling for confidence calibration
+  - Curriculum learning + data augmentation
+  - Auto checkpoint/resume from latest state
 
 ## Training Targets
 
-Choose your target level based on desired accuracy and available resources:
+Configuration uses `TrainingConfig` dataclass with validation. Choose your target level:
 
 | Target | Features | Expected Accuracy | Training Time |
 |--------|----------|-------------------|---------------|
-| **Target 1** | DeBERTa-large + augmentation + curriculum learning on PDNC dataset | 80-85% | 4-6 hours per fold (Kaggle 2xT4) |
-| **Target 2** | Target 1 + multi-source data (PDNC, LitBank, DirectQuote) with genre balancing | 85-88% | 6-8 hours per fold |
-| **Target 3** | Target 2 + ensemble preparation (placeholder for future work) | 88-90% | 8-10 hours per fold |
+| **Target 1** | PDNC dataset only (6 epochs) | 80-85% | 4-6 hours/fold on 2xT4 |
+| **Target 2** | Multi-source (PDNC + LitBank + DirectQuote) + genre balancing (8 epochs) | 85-88% | 6-8 hours/fold |
+| **Target 3** | Raises `NotImplementedError` - use [models/ensemble.py](models/ensemble.py) separately | 88-90% | Manual ensemble setup |
 
-**Recommendation**: Start with Target 1 for most use cases.
+**Recommendation**: Start with Target 1. Set `TARGET_LEVEL = 1` in notebook config cell.
 
-### Fold Training
+### Fold Training & Auto-Resume
 
-The notebook supports training multiple folds for cross-validation and ensemble use:
-
-- **`FOLD_SELECTION = "all"`**: Trains all 5 folds (recommended for production/ensemble)
-  - Produces 5 models: `best_model_split_0.pt` through `best_model_split_4.pt`
-  - Total training time: ~20-30 hours for Target 1 (all 5 folds)
+- **`FOLD_SELECTION = "all"`**: Trains all 5 folds (recommended)
+  - Produces: `fold_0/best_model/`, `fold_1/best_model/`, ..., `fold_4/best_model/`
+  - Total time: ~20-30 hours for Target 1
+  - Models saved as `.model` files (PyTorch checkpoints)
   
-- **`FOLD_SELECTION = [0, 2, 4]`**: Trains only specific folds
-  - Produces 3 models: `best_model_split_0.pt`, `best_model_split_2.pt`, `best_model_split_4.pt`
+- **`FOLD_SELECTION = [0, 2, 4]`**: Trains specific folds only
   
-- **`FOLD_SELECTION = [1]`**: Trains a single fold
-  - Produces 1 model: `best_model_split_1.pt`
+- **`FOLD_SELECTION = [1]`**: Trains single fold
 
-**For ensemble inference**: Train all 5 folds, then use all models together in the audiobook-generator for improved accuracy through voting/averaging.
+**Auto-resume behavior**:
+- Training detects and resumes from latest checkpoint automatically
+- Completed folds are skipped (checks for `best_model/pytorch_model.bin`)
+- Checkpoint cleanup happens automatically at fold boundaries (keeps last 2 + best)
+- No manual intervention needed - just re-run all cells
+
+**For ensemble inference**: Train all 5 folds, use [models/ensemble.py](models/ensemble.py) for voting/averaging.
 
 ## Requirements
 
@@ -77,150 +89,204 @@ The notebook supports training multiple folds for cross-validation and ensemble 
 
 ## Datasets
 
-The training pipeline supports multiple datasets. Configure which datasets to use by setting `DATASETS` in the notebook:
+Configured via `TrainingConfig.datasets` parameter:
 
 ```python
-# Examples:
-DATASETS = ["pdnc"]                           # Single dataset (default)
-DATASETS = ["pdnc", "litbank"]                # Multiple datasets
-DATASETS = ["pdnc", "litbank", "directquote"] # All literature + news
+# Target 1 (default):
+CONFIG.datasets = ['pdnc']
+
+# Target 2:
+CONFIG.datasets = ['pdnc', 'litbank', 'directquote']
 ```
 
 ### Available Datasets
 
 | Dataset | Genre | Samples | Description |
 |---------|-------|---------|-------------|
-| **pdnc** | Literature | ~35,000 | PDNC (22 novels) - Primary training set |
-| **litbank** | Classic Literature | ~3,000 | 100 classic texts with quote annotations |
-| **directquote** | News | ~10,000 | News quotes from 13 media sources |
-| **quotebank** | News | ~10,000* | Large-scale news quotes (requires manual download) |
+| **pdnc** | Literature | 35,978 | 22 novels from PDNC dataset |
+| **litbank** | Classic Literature | ~3,000 | 100 classic texts |
+| **directquote** | News | 10,353 | 13 media sources |
 
-\* Quotebank samples 10,000 from a much larger dataset.
+All datasets auto-download. Implemented in [data/multi_source_data.py](data/multi_source_data.py).
 
-### Dataset Download
-
-Datasets are downloaded automatically when selected, except Quotebank which requires manual download:
-
-| Dataset | Auto Download | Source |
-|---------|--------------|--------|
-| pdnc | ✅ Yes | [speaker-attribution-acl2023](https://github.com/Priya22/speaker-attribution-acl2023) |
-| litbank | ✅ Yes | [dbamman/litbank](https://github.com/dbamman/litbank) |
-| directquote | ✅ Yes | [THUNLP-MT/DirectQuote](https://github.com/THUNLP-MT/DirectQuote) |
-| quotebank | ❌ Manual | [Zenodo](https://zenodo.org/record/4277311) |
-
-To list available datasets programmatically:
-
-```python
-from data.multi_source_data import MultiSourceDataLoader
-MultiSourceDataLoader.list_available_datasets()
-```
+**Data loading**: Uses `PDNCFoldIterator` with lazy loading to reduce memory usage. Multi-source loader provides genre-balanced sampling when `balance_genres=True`.
 
 
 ## Configuration
 
-Key hyperparameters in the notebook (automatically adjusted by `RUN_ENV`):
+Uses `TrainingConfig` dataclass with validation (defined in notebook):
 
 ```python
-CONFIG = {
-    "base_model": "microsoft/deberta-v3-large",
-    "epochs": 50,
-    "batch_size": 8,
-    "gradient_accumulation_steps": 4,  # 16 for Colab
-    "learning_rate": 5e-6,
-    "checkpoint_every": 500,  # 300 for Colab
-    "eval_every": 500,  # 300 for Colab
-    "fp16": True,
-    "gradient_checkpointing": True,
-    "use_curriculum": True,
-    "use_augmentation": True,
-}
+@dataclass
+class TrainingConfig:
+    # Core settings
+    target_level: int
+    epochs: int = 15
+    batch_size: int = 8
+    lr: float = 5e-6
+    
+    # Dataset configuration
+    datasets: List[str] = field(default_factory=lambda: ['pdnc'])
+    fold_selection: Union[str, List[int]] = "all"
+    
+    # Advanced features
+    use_augmentation: bool = True
+    use_curriculum: bool = True
+    focal_gamma: float = 2.0
+    label_smoothing: float = 0.1
+    r_drop_alpha: float = 0.0
+    
+    # Environment-specific (auto-populated from ENV_CFG)
+    gradient_accumulation_steps: int = 4  # 16 for Colab
+    checkpoint_every: int = 500  # 300 for Colab
+    eval_every: int = 500  # 300 for Colab
 ```
+
+**Environment switching**: Set `RUN_ENV = "kaggle"` or `"colab"` in first cell. All paths, checkpoint frequencies, and GPU settings adjust automatically.
 
 ## Training Outputs
 
-The notebook produces:
+### Directory Structure
+```
+{output_dir}/
+├── fold_0/
+│   ├── checkpoint-500/
+│   ├── checkpoint-1000/
+│   └── best_model/
+│       └── pytorch_model.bin
+├── fold_1/
+│   └── best_model/
+├── ...
+├── training_log.csv          # Step-by-step metrics
+└── training_summary.png      # Auto-generated visualization
+```
 
-### Single Fold Training
-- `checkpoint_step_{step}.pt` - Periodic checkpoints during training
-- `best_model.pt` - Best performing model based on validation accuracy
+### Files Produced
+- **`fold_N/best_model/`**: Best model for fold N (used for ensemble)
+- **`fold_N/checkpoint-*/`**: Periodic checkpoints (auto-cleaned, keeps last 2)
+- **`training_log.csv`**: Metrics logged every eval step
+- **`training_summary.png`**: Visualization (auto-generated after training)
+- Optional: wandb real-time monitoring (graceful fallback if unavailable)
 
-### Multi-Fold Training
-- `checkpoint_step_{step}_fold_{N}.pt` - Periodic checkpoints per fold
-- `best_model_split_{N}.pt` - Best model for each fold (N = 0-4)
-- Training logs with accuracy metrics and loss values per fold
-- Evaluation reports with per-genre and per-difficulty breakdowns
-
-**Note**: When training all 5 folds, you'll have 5 separate models that can be used independently or combined for ensemble predictions in the audiobook-generator project.
+**Checkpoint cleanup**: Automatic at fold boundaries to save space.
 
 ## Troubleshooting
 
 ### Out of Memory (OOM) Errors
-- Reduce `batch_size` to 4 or lower
-- Increase `gradient_accumulation_steps` to 16 or 32
-- Ensure `gradient_checkpointing=True`
-- Reduce `max_length` from 512 to 384
+- Reduce `CONFIG.batch_size` to 4 or lower
+- Increase `CONFIG.gradient_accumulation_steps` to 16 or 32
+- Note: Gradient checkpointing auto-disabled for multi-GPU (Kaggle)
+- Reduce `CONFIG.max_length` from 512 to 384
 
 ### Slow Training
-- Verify GPU is enabled in Kaggle/Colab settings
-- Ensure `fp16=True` for mixed precision training
-- Check that `use_accelerate=True` on multi-GPU setups (Kaggle)
+- Verify GPU enabled in Kaggle/Colab settings (T4 recommended)
+- Check `CONFIG.fp16=True` for mixed precision
+- Adjust `CONFIG.checkpoint_every` and `CONFIG.eval_every` (default: Kaggle 500, Colab 300)
+- On Kaggle: Ensure 2xT4 GPU accelerator selected for multi-GPU
 
-### Colab Disconnects
-- Checkpoints save automatically every 300 steps to Google Drive
-- Training resumes automatically from latest checkpoint
-- Consider upgrading to Colab Pro for longer sessions
+### Resume Issues
+- Check `fold_*/checkpoint-*/` folders exist in output directory
+- Training auto-resumes from latest checkpoint
+- Completed folds auto-skipped (checks for `best_model/pytorch_model.bin`)
+
+### Data Loading Errors
+- All silent fallbacks removed - errors halt execution immediately
+- Check error messages for specific dataset/file issues
+- Verify `CONFIG.multi_source_base` path is correct
 
 ### Low Accuracy
-- Verify all 5 folds are training (set `FOLD_SELECTION = "all"`)
-- Try different learning rates: `1e-5`, `2e-5`, `5e-6`
-- Extend training epochs if accuracy is still improving
-- Enable cross-domain validation to identify weak genres
+- Start with `TARGET_LEVEL=1`, then increase to 2
+- Try adjusting `CONFIG.focal_gamma` (default: 2.0) or `CONFIG.label_smoothing` (default: 0.1)
+- Set `CONFIG.use_curriculum=True` for better convergence
+- Check per-genre accuracy in training logs
 
 ## Repository Structure
 
 ```
-booknlp_max_unified.ipynb     # Main training notebook (USE THIS)
+booknlp_max_unified.ipynb     # ⭐ MAIN TRAINING NOTEBOOK - use this
 README.md                     # This file
+.github/copilot-instructions.md  # AI coding agent instructions
+
 models/
-  max_performance_model.py    # DeBERTa model with quote/candidate masks
+  max_performance_model.py    # MaxPerformanceSpeakerModel implementation
+  ensemble.py                 # 3-model ensemble (DeBERTa + RoBERTa + ELECTRA)
+  best_model_split_*.model    # Trained model checkpoints (5 folds)
+  hugging_face_token.txt      # HF token for model uploads
+  scores.txt                  # Model performance metrics
+  plans/                      # Planning documents for iterations
+
 data/
-  curriculum_loader.py        # Difficulty-based sampling
-  data_augmentation.py        # Synonym replacement augmentation
-  multi_source_data.py        # Multi-dataset loader
+  curriculum_loader.py        # Curriculum learning (progressive difficulty)
+  data_augmentation.py        # Synonym replacement, context variation
+  multi_source_data.py        # Multi-source loader with genre balancing
+  training_samples.py         # Sample data utilities
+
 losses/
-  focal_loss.py              # Combined loss with focal + R-Drop
+  focal_loss.py              # Focal loss + label smoothing + R-Drop
+
 evaluation/
-  confidence_calibration.py   # Temperature scaling
+  confidence_calibration.py   # Temperature scaling for calibration
   cross_domain_validation.py  # Genre-specific evaluation
   error_analysis.py          # Error pattern detection
-  genre_specific_adaptations.py
+  genre_specific_adaptations.py  # Genre-specific model adaptations
+
 optimization/
-  post_processing.py         # Confidence-based post-processing
+  post_processing.py         # Linguistic rules (dialogue continuity, pronouns)
   model_optimization.py      # Quantization and ONNX export
+
 utils/
   common_utils.py            # Shared utilities
+
+deprecated/
+  # Old notebook versions (kept for reference, not maintained)
 ```
 
 ## Using Trained Models
 
-After training completes, models are saved to `{output_dir}/`:
+After training completes, models are saved to `{output_dir}/fold_*/best_model/`:
 
-### Single Model Usage
-- `best_model.pt` - Use directly for speaker attribution
+### Integration with Audio Book Generator
 
-### Ensemble Usage (Recommended for Best Accuracy)
-- `best_model_split_0.pt` through `best_model_split_4.pt` - Load all 5 models and combine predictions through voting or averaging
+In the main [Audio Book Generator](https://github.com/bohdan-natsevych/audiobook-generator) project:
 
-In the main [Audio Book Generator](https://github.com/bohdan-natsevych/audiobook-generator) project, these models can be used to:
+1. **Single model**: Use any `fold_N/best_model/` for speaker attribution
+2. **Ensemble (recommended)**: Load all 5 fold models and combine predictions via voting/averaging
+   - Implementation: [models/ensemble.py](models/ensemble.py)
+   - Expected accuracy gain: 2-5% over single model
+   - Architecture: DeBERTa + RoBERTa + ELECTRA (3-model ensemble)
 
-1. Identify speaking characters in narrative text
-2. Assign distinct voices to each character
-3. Generate high-quality audiobooks with character-specific narration
+### Model Format
 
-**Ensemble Strategy**: For production use, train all 5 folds and implement ensemble inference where each model votes on the speaker attribution. This typically improves accuracy by 2-5% compared to a single model.
+- **Checkpoint format**: PyTorch `.model` files (saved state dicts)
+- **Special tokens**: Models expect `[QUOTE]`, `[ALTQUOTE]`, `[PAR]` in input
+- **Candidate-level softmax**: Predictions normalized per candidate set
+- **Export**: Use [optimization/model_optimization.py](optimization/model_optimization.py) for ONNX/quantization
 
+## Advanced Training Techniques
 
+Implemented in the pipeline:
 
+- **Curriculum learning** ([data/curriculum_loader.py](data/curriculum_loader.py)): Progressive difficulty
+  - Simple dialogues \u2192 multi-speaker \u2192 pronoun-heavy \u2192 story-within-story
+- **Data augmentation** ([data/data_augmentation.py](data/data_augmentation.py)): Synonym replacement, context variation
+- **Focal loss** ([losses/focal_loss.py](losses/focal_loss.py)): Handles class imbalance by focusing on hard examples
+- **Post-processing** ([optimization/post_processing.py](optimization/post_processing.py)): Linguistic rules for dialogue continuity, pronoun consistency
+
+Set `CONFIG.use_curriculum=True` and `CONFIG.use_augmentation=True` for best results.
+
+## Project Conventions
+
+### Code Comments
+- `# CURSOR:` prefix indicates critical design decisions or implementation notes
+- Example: `# CURSOR: Special tokens for better structural understanding`
+
+### Special Token Architecture
+Always use the 3 special tokens when preparing model input:
+- `[QUOTE]`: Marks target quote to attribute
+- `[ALTQUOTE]`: Marks alternative/comparison quotes  
+- `[PAR]`: Marks paragraph boundaries for context
+
+Defined in [models/max_performance_model.py](models/max_performance_model.py#L38)
 
 ## License
 

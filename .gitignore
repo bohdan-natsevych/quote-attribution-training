@@ -74,3 +74,6 @@ temp/
 speaker-attribution-acl2023/
 transformers_cache/
 deprecated
+.github/copilot-instructions.md
+.github/copilot-instructions.md
+copilot-instructions.md

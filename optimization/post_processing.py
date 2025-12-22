@@ -254,8 +254,8 @@ class PostProcessor:
     
     def _is_alternating_dialogue(self, context: str) -> bool:
         """Check for alternating dialogue pattern."""
-        # Count quote marks in context
-        quote_count = context.count('"') + context.count('"') + context.count('"')
+        # CURSOR: Count both double and single quotes; alternating dialogue typically has multiple quoted turns.
+        quote_count = context.count('"') + context.count("'")
         
         # Alternating pattern typically has multiple quotes
         return quote_count >= 4
