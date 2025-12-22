@@ -107,7 +107,7 @@ class QuoteAugmenter:
         # CURSOR: Initialize nlpaug augmenters if available
         self.nlpaug_synonym = None
         self.nlpaug_insert = None
-                # CURSOR: Do NOT eagerly construct nlpaug contextual augmenters here.
+        # CURSOR: Do NOT eagerly construct nlpaug contextual augmenters here.
         # CURSOR: `ContextualWordEmbsAug(model_path='bert-base-uncased', ...)` pulls a full transformer
         # CURSOR: model into memory (and may grab GPU VRAM). The current augmentation pipeline below
         # CURSOR: uses only lightweight, deterministic operations (WordNet + simple edits), so the
