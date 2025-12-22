@@ -21,6 +21,7 @@ import re
 from typing import List, Dict, Tuple, Optional, Any
 from dataclasses import dataclass
 from copy import deepcopy
+import importlib
 
 # CURSOR: Try to import optional dependencies
 try:
@@ -31,10 +32,11 @@ except ImportError:
     NLTK_AVAILABLE = False
 
 try:
-    import nlpaug.augmenter.word as naw
+    naw = importlib.import_module("nlpaug.augmenter.word")
     NLPAUG_AVAILABLE = True
 except ImportError:
     NLPAUG_AVAILABLE = False
+    naw = None
 
 
 @dataclass
@@ -68,6 +70,9 @@ class QuoteAugmenter:
         candidate_shuffle_prob: float = 0.5,
         entity_mask_prob: float = 0.1,
         max_augmentations_per_sample: int = 4,
+        use_contextual_insert: bool = False,
+        contextual_insert_model: str = "prajjwal1/bert-tiny",
+        contextual_insert_device: str = "cpu",
         seed: Optional[int] = None
     ):
         """
@@ -92,6 +97,10 @@ class QuoteAugmenter:
         self.candidate_shuffle_prob = candidate_shuffle_prob
         self.entity_mask_prob = entity_mask_prob
         self.max_augmentations_per_sample = max_augmentations_per_sample
+        self.use_contextual_insert = use_contextual_insert
+        self.contextual_insert_model = contextual_insert_model
+        self.contextual_insert_device = contextual_insert_device
+        self._nlpaug_initialized = False
         
         if seed is not None:
             random.seed(seed)
@@ -107,20 +116,35 @@ class QuoteAugmenter:
         # CURSOR: Initialize nlpaug augmenters if available
         self.nlpaug_synonym = None
         self.nlpaug_insert = None
-        # CURSOR: Do NOT eagerly construct nlpaug contextual augmenters here.
-        # CURSOR: `ContextualWordEmbsAug(model_path='bert-base-uncased', ...)` pulls a full transformer
-        # CURSOR: model into memory (and may grab GPU VRAM). The current augmentation pipeline below
-        # CURSOR: uses only lightweight, deterministic operations (WordNet + simple edits), so the
-        # CURSOR: heavy contextual augmenter would be unused overhead and can destabilize notebooks.
-        # if NLPAUG_AVAILABLE:
-        #     try:
-        #         self.nlpaug_synonym = naw.SynonymAug(aug_src='wordnet')
-        #         self.nlpaug_insert = naw.ContextualWordEmbsAug(
-        #             model_path='bert-base-uncased',
-        #             action='insert'
-        #         )
-        #     except Exception:
-        #         pass  # Fall back to basic augmentation
+        # CURSOR: Do NOT eagerly construct contextual augmenters here.
+        # CURSOR: Even a "small" MLM can consume noticeable RAM/VRAM; we lazy-init only if the caller
+        # CURSOR: explicitly enables contextual insertion.
+
+    def _lazy_init_nlpaug(self) -> None:
+        """CURSOR: Initialize optional nlpaug-based augmenters only when explicitly requested."""
+        if self._nlpaug_initialized:
+            return
+        self._nlpaug_initialized = True
+
+        if not (NLPAUG_AVAILABLE and self.use_contextual_insert):
+            return
+
+        # CURSOR: SynonymAug is lightweight; ContextualWordEmbsAug is heavy and must remain opt-in.
+        try:
+            self.nlpaug_synonym = naw.SynonymAug(aug_src='wordnet')
+        except Exception:
+            self.nlpaug_synonym = None
+
+        try:
+            # CURSOR: Default to a tiny MLM; callers can override with a larger model if desired.
+            base_kwargs = {"model_path": self.contextual_insert_model, "action": "insert"}
+            try:
+                # CURSOR: Best-effort CPU pinning (different nlpaug versions may not support `device`).
+                self.nlpaug_insert = naw.ContextualWordEmbsAug(**base_kwargs, device=self.contextual_insert_device)
+            except TypeError:
+                self.nlpaug_insert = naw.ContextualWordEmbsAug(**base_kwargs)
+        except Exception:
+            self.nlpaug_insert = None
     
     def get_synonyms(self, word: str) -> List[str]:
         """Get synonyms for a word using WordNet."""
@@ -156,6 +180,92 @@ class QuoteAugmenter:
             if start < pe and end > ps:
                 return True
         return False
+
+    @staticmethod
+    def _normalize_spans(text_len: int, spans: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
+        """CURSOR: Clamp/merge spans so downstream split logic is stable."""
+        if not spans:
+            return []
+        cleaned: List[Tuple[int, int]] = []
+        for s, e in spans:
+            try:
+                s_i = int(s)
+                e_i = int(e)
+            except Exception:
+                continue
+            s_i = max(0, min(text_len, s_i))
+            e_i = max(0, min(text_len, e_i))
+            if e_i > s_i:
+                cleaned.append((s_i, e_i))
+        if not cleaned:
+            return []
+        cleaned.sort(key=lambda x: (x[0], x[1]))
+        merged: List[Tuple[int, int]] = [cleaned[0]]
+        for s, e in cleaned[1:]:
+            ms, me = merged[-1]
+            if s <= me:
+                merged[-1] = (ms, max(me, e))
+            else:
+                merged.append((s, e))
+        return merged
+
+    def _nlpaug_insert_once(self, text: str) -> str:
+        """CURSOR: Run one contextual insertion safely; returns original on failure."""
+        if not text or self.nlpaug_insert is None:
+            return text
+        try:
+            out = self.nlpaug_insert.augment(text)
+            if isinstance(out, list):
+                return out[0] if out else text
+            return out if isinstance(out, str) else text
+        except TypeError:
+            # CURSOR: Some nlpaug versions require `n` explicitly.
+            try:
+                out = self.nlpaug_insert.augment(text, n=1)
+                if isinstance(out, list):
+                    return out[0] if out else text
+                return out if isinstance(out, str) else text
+            except Exception:
+                return text
+        except Exception:
+            return text
+
+    def _contextual_insert_outside_spans(
+        self,
+        text: str,
+        protected_spans: List[Tuple[int, int]],
+        n: int,
+    ) -> str:
+        """CURSOR: Apply contextual insertion only to unprotected segments (keeps spans intact)."""
+        if not text or self.nlpaug_insert is None or n <= 0:
+            return text
+
+        spans = self._normalize_spans(len(text), protected_spans)
+        if not spans:
+            out = text
+            for _ in range(n):
+                out = self._nlpaug_insert_once(out)
+            return out
+
+        segments: List[Dict[str, Any]] = []
+        pos = 0
+        for s, e in spans:
+            if pos < s:
+                segments.append({"text": text[pos:s], "protected": False})
+            segments.append({"text": text[s:e], "protected": True})
+            pos = e
+        if pos < len(text):
+            segments.append({"text": text[pos:], "protected": False})
+
+        unprotected_idxs = [i for i, seg in enumerate(segments) if not seg["protected"] and seg["text"].strip()]
+        if not unprotected_idxs:
+            return text
+
+        for _ in range(n):
+            idx = random.choice(unprotected_idxs)
+            segments[idx]["text"] = self._nlpaug_insert_once(segments[idx]["text"])
+
+        return "".join(seg["text"] for seg in segments)
     
     def synonym_replace(
         self,
@@ -216,6 +326,11 @@ class QuoteAugmenter:
         Returns:
             Augmented text
         """
+        if self.use_contextual_insert:
+            self._lazy_init_nlpaug()
+            if self.nlpaug_insert is not None:
+                return self._contextual_insert_outside_spans(text, protected_spans, n=n)
+
         # CURSOR: Simple word insertion using common filler words
         filler_words = [
             'actually', 'really', 'simply', 'quite', 'rather',
@@ -475,7 +590,7 @@ class QuoteAugmenter:
                 if aug_sample is not None:
                     aug_sample['augmentation'] = strategy_name
                     augmented.append(aug_sample)
-            except Exception as e:
+            except Exception:
                 # CURSOR: Skip failed augmentations silently
                 continue
         
@@ -595,6 +710,3 @@ __all__ = [
     'AugmentedSample',
     'augment_dataset'
 ]
-
-
-
