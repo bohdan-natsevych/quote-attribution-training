@@ -285,7 +285,7 @@ class GenreSpecificAdaptation:
         
         for genre, metrics in sorted(self.genre_metrics.items(), 
                                      key=lambda x: x[1]['accuracy']):
-            status = "⚠️ BELOW" if metrics['below_threshold'] else "✓"
+            status = "[WARNING] BELOW" if metrics['below_threshold'] else "[OK]"
             lines.append(
                 f"{status} {genre}: {metrics['accuracy']:.2%} "
                 f"(n={metrics['sample_count']})"

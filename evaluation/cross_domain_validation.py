@@ -229,7 +229,7 @@ class CrossDomainValidator:
         
         print(f"\nPer-Genre Metrics:")
         for genre, metrics in sorted(results['genre_metrics'].items()):
-            status = "✓" if metrics['passed'] else "✗"
+            status = "[OK]" if metrics['passed'] else "[FAIL]"
             print(f"  {status} {genre}: acc={metrics['accuracy']:.4f}, f1={metrics['f1']:.4f}, n={metrics['samples']}")
         
         print(f"\nDomain Shift Score: {results['domain_shift_score']:.4f}")

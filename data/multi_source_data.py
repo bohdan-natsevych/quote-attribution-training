@@ -42,7 +42,7 @@ class DatasetConfig:
 
 def _clone_repo(url: str, dest: Path) -> None:
     if dest.exists() and any(dest.iterdir()):
-        print(f"✅ Found {dest}")
+        print(f"[OK] Found {dest}")
         return
     dest.parent.mkdir(parents=True, exist_ok=True)
     subprocess.run(["git", "clone", "--depth", "1", url, str(dest)], check=True)
@@ -50,7 +50,7 @@ def _clone_repo(url: str, dest: Path) -> None:
 
 def _download_file(url: str, dest: Path) -> None:
     if dest.exists():
-        print(f"✅ Found {dest}")
+        print(f"[OK] Found {dest}")
         return
     dest.parent.mkdir(parents=True, exist_ok=True)
     urllib.request.urlretrieve(url, dest)
@@ -62,14 +62,14 @@ def _download_file(url: str, dest: Path) -> None:
 # CURSOR:     qb_file = target_dir / "quotes-2019.json"
 # CURSOR:
 # CURSOR:     if qb_file.exists():
-# CURSOR:         print(f"✅ Quotebank already present at {qb_file}")
+# CURSOR:         print(f"[OK] Quotebank already present at {qb_file}")
 # CURSOR:         return qb_file
 # CURSOR:
 # CURSOR:     qb_bz2 = target_dir / "quotes-2019.json.bz2"
 # CURSOR:     _download_file(f"{download_url}/files/quotes-2019.json.bz2?download=1", qb_bz2)
 # CURSOR:
 # CURSOR:     # CURSOR: Stream-decompress to avoid loading the archive into memory
-# CURSOR:     print("📦 Decompressing Quotebank archive...")
+# CURSOR:     print("[*] Decompressing Quotebank archive...")
 # CURSOR:     with bz2.open(qb_bz2, 'rt', encoding='utf-8') as f_in, open(qb_file, 'w', encoding='utf-8') as f_out:
 # CURSOR:         for line in f_in:
 # CURSOR:             f_out.write(line)
@@ -79,7 +79,7 @@ def _download_file(url: str, dest: Path) -> None:
 # CURSOR:     except FileNotFoundError:
 # CURSOR:         pass
 # CURSOR:
-# CURSOR:     print(f"✅ Quotebank ready at {qb_file}")
+# CURSOR:     print(f"[OK] Quotebank ready at {qb_file}")
 # CURSOR:     return qb_file
 
 
@@ -164,7 +164,7 @@ class MultiSourceDataLoader:
     @classmethod
     def list_available_datasets(cls) -> None:
         """Print available datasets with descriptions."""
-        print("\n📚 Available Datasets for Quote Attribution Training:")
+        print("\n[*] Available Datasets for Quote Attribution Training:")
         print("=" * 60)
         for name, config in cls.AVAILABLE_DATASETS.items():
             print(f"\n  {name}")
@@ -185,19 +185,19 @@ class MultiSourceDataLoader:
         """
         for dataset_name in self.datasets:
             if dataset_name not in self.AVAILABLE_DATASETS:
-                print(f"⚠️ Unknown dataset '{dataset_name}'. Available: {list(self.AVAILABLE_DATASETS.keys())}")
+                print(f"[WARNING] Unknown dataset '{dataset_name}'. Available: {list(self.AVAILABLE_DATASETS.keys())}")
                 continue
             
             config = self.AVAILABLE_DATASETS[dataset_name]
             dataset_path = self.base_path / config.path
             
             if not dataset_path.exists():
-                print(f"\n⚠️ Dataset '{config.name}' not found at {dataset_path}")
+                print(f"\n[WARNING] Dataset '{config.name}' not found at {dataset_path}")
                 if config.download_url:
                     print(f"   Download from: {config.download_url}")
                 continue
             
-            print(f"\n📂 Loading {config.name} from {dataset_path}...")
+            print(f"\n[*] Loading {config.name} from {dataset_path}...")
             
             try:
                 loader_fn = getattr(self, config.loader_fn)
@@ -215,10 +215,10 @@ class MultiSourceDataLoader:
                 self.data_by_genre[config.genre].extend(samples)
                 self.data_by_source[dataset_name] = samples
                 
-                print(f"   ✅ Loaded {len(samples):,} samples from {config.name}")
+                print(f"   [OK] Loaded {len(samples):,} samples from {config.name}")
                 
             except Exception as e:
-                print(f"   ❌ Error loading {config.name}: {e}")
+                print(f"   [ERROR] Error loading {config.name}: {e}")
         
         return dict(self.data_by_genre)
     
@@ -840,16 +840,16 @@ def download_datasets(
     for ds_name in targets:
         config = MultiSourceDataLoader.AVAILABLE_DATASETS.get(ds_name)
         if not config:
-            print(f"⚠️  Unknown dataset '{ds_name}', skipping")
+            print(f"[WARNING] Unknown dataset '{ds_name}', skipping")
             continue
 
         if not config.download_url:
-            print(f"⚠️  No download URL configured for {config.name}; skipping")
+            print(f"[WARNING] No download URL configured for {config.name}; skipping")
             continue
 
         ds_dir = base / config.path
 
-        print(f"\n📦 Processing {config.name} ({ds_name})...")
+        print(f"\n[*] Processing {config.name} ({ds_name})...")
         print(f"   Description: {config.description}")
         print(f"   Target directory: {ds_dir}")
 
@@ -862,15 +862,15 @@ def download_datasets(
             ds_dir.mkdir(parents=True, exist_ok=True)
             target_file = ds_dir / Path(config.download_url).name
             _download_file(config.download_url, target_file)
-            print(f"✅ {config.name} ready at {target_file}")
+            print(f"[OK] {config.name} ready at {target_file}")
 
         resolved_paths[ds_name] = ds_dir
 
     print(f"\n{'=' * 60}")
     print("DATASET DOWNLOAD COMPLETE")
     print(f"{'=' * 60}")
-    print(f"📚 Downloaded datasets: {list(resolved_paths.keys())}")
-    print(f"📁 Base directory: {base}")
+    print(f"[*] Downloaded datasets: {list(resolved_paths.keys())}")
+    print(f"[*] Base directory: {base}")
     print(f"{'=' * 60}\n")
 
     return resolved_paths
