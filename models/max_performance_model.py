@@ -169,7 +169,15 @@ class MaxPerformanceSpeakerModel(nn.Module):
 
     def gradient_checkpointing_enable(self, gradient_checkpointing_kwargs=None):
         """Enable gradient checkpointing for the encoder."""
-        self.encoder.gradient_checkpointing_enable(gradient_checkpointing_kwargs=gradient_checkpointing_kwargs)
+        # CURSOR: Prefer non-reentrant checkpointing; it is more compatible with DataParallel + AMP and avoids
+        # CURSOR: "Trying to backward through the graph a second time" errors seen with reentrant checkpointing.
+        if gradient_checkpointing_kwargs is None:
+            gradient_checkpointing_kwargs = {"use_reentrant": False}
+        try:
+            self.encoder.gradient_checkpointing_enable(gradient_checkpointing_kwargs=gradient_checkpointing_kwargs)
+        except TypeError:
+            # CURSOR: Backwards compatibility for older Transformers versions.
+            self.encoder.gradient_checkpointing_enable()
 
     def get_tokenizer(self) -> PreTrainedTokenizerBase:
         """Return the tokenizer with special tokens."""
