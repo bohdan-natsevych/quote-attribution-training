@@ -43,7 +43,7 @@ class MaxPerformanceSpeakerModel(nn.Module):
         dropout: float = 0.2,
         hidden_dropout: float = 0.1,
         freeze_encoder_layers: int = 0,
-        device: str = "cuda:0"  # CURSOR: Initialize directly on GPU
+        device: str = "cuda:0"  # CURSOR: Target device for the full module (moved at end of __init__).
     ):
         """
         Initialize the model.
@@ -72,12 +72,10 @@ class MaxPerformanceSpeakerModel(nn.Module):
         self.altquote_token_id = self.tokenizer.convert_tokens_to_ids("[ALTQUOTE]")
         self.par_token_id = self.tokenizer.convert_tokens_to_ids("[PAR]")
 
-        # CURSOR: Load encoder and resize embeddings entirely on GPU - no CPU staging
-        with torch.cuda.device(device):
-            self.encoder = DebertaV2Model.from_pretrained(model_name)
-            # CURSOR: Resize embeddings inside GPU context so new rows created on GPU
-            if num_added > 0:
-                self.encoder.resize_token_embeddings(len(self.tokenizer))
+        # CURSOR: Load encoder on CPU first; we move the FULL module to the requested device at the end.
+        self.encoder = DebertaV2Model.from_pretrained(model_name)
+        if num_added > 0:
+            self.encoder.resize_token_embeddings(len(self.tokenizer))
         
         self.hidden_size = self.encoder.config.hidden_size  # 1024 for large
 
@@ -88,76 +86,78 @@ class MaxPerformanceSpeakerModel(nn.Module):
                     param.requires_grad = False
 
         # CURSOR: Multi-layer BiLSTM for context encoding
-        with torch.cuda.device(device):
-            self.context_lstm = nn.LSTM(
-                input_size=self.hidden_size,
-                hidden_size=self.hidden_size // 2,
-                num_layers=num_lstm_layers,
-                bidirectional=True,
-                dropout=hidden_dropout if num_lstm_layers > 1 else 0,
-                batch_first=True
-            )
+        self.context_lstm = nn.LSTM(
+            input_size=self.hidden_size,
+            hidden_size=self.hidden_size // 2,
+            num_layers=num_lstm_layers,
+            bidirectional=True,
+            dropout=hidden_dropout if num_lstm_layers > 1 else 0,
+            batch_first=True
+        )
 
         # CURSOR: Multi-head cross-attention (quote attends to candidates)
-        with torch.cuda.device(device):
-            self.cross_attention = nn.MultiheadAttention(
-                embed_dim=self.hidden_size,
-                num_heads=num_attention_heads,
-                dropout=hidden_dropout,
-                batch_first=True
-            )
+        self.cross_attention = nn.MultiheadAttention(
+            embed_dim=self.hidden_size,
+            num_heads=num_attention_heads,
+            dropout=hidden_dropout,
+            batch_first=True
+        )
 
         # CURSOR: Self-attention for candidates
-        with torch.cuda.device(device):
-            self.candidate_attention = nn.MultiheadAttention(
-                embed_dim=self.hidden_size,
-                num_heads=num_attention_heads,
-                dropout=hidden_dropout,
-                batch_first=True
-            )
+        self.candidate_attention = nn.MultiheadAttention(
+            embed_dim=self.hidden_size,
+            num_heads=num_attention_heads,
+            dropout=hidden_dropout,
+            batch_first=True
+        )
 
         # CURSOR: Transformer encoder for candidate interaction
-        with torch.cuda.device(device):
-            encoder_layer = nn.TransformerEncoderLayer(
-                d_model=self.hidden_size,
-                nhead=num_attention_heads,
-                dim_feedforward=self.hidden_size * 4,
-                dropout=hidden_dropout,
-                activation='gelu',
-                batch_first=True
-            )
-            self.candidate_transformer = nn.TransformerEncoder(
-                encoder_layer,
-                num_layers=num_transformer_layers
-            )
+        encoder_layer = nn.TransformerEncoderLayer(
+            d_model=self.hidden_size,
+            nhead=num_attention_heads,
+            dim_feedforward=self.hidden_size * 4,
+            dropout=hidden_dropout,
+            activation='gelu',
+            batch_first=True
+        )
+        self.candidate_transformer = nn.TransformerEncoder(
+            encoder_layer,
+            num_layers=num_transformer_layers
+        )
 
         # CURSOR: Layer normalization for stability
-        with torch.cuda.device(device):
-            self.layer_norm = nn.LayerNorm(self.hidden_size)
+        self.layer_norm = nn.LayerNorm(self.hidden_size)
 
         # CURSOR: Deep classifier with residual-style connections
         # Input: concat of [candidate_emb, quote_emb, cross_attended, self_attended, element_wise_mult]
         classifier_input_size = self.hidden_size * 5
 
-        with torch.cuda.device(device):
-            self.classifier = nn.Sequential(
-                nn.Linear(classifier_input_size, 2048),
-                nn.LayerNorm(2048),
-                nn.GELU(),
-                nn.Dropout(dropout),
-                nn.Linear(2048, 1024),
-                nn.LayerNorm(1024),
-                nn.GELU(),
-                nn.Dropout(dropout),
-                nn.Linear(1024, 512),
-                nn.LayerNorm(512),
-                nn.GELU(),
-                nn.Dropout(dropout * 0.5),  # Less dropout in final layers
-                nn.Linear(512, 1)
-            )
+        self.classifier = nn.Sequential(
+            nn.Linear(classifier_input_size, 2048),
+            nn.LayerNorm(2048),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(2048, 1024),
+            nn.LayerNorm(1024),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(1024, 512),
+            nn.LayerNorm(512),
+            nn.GELU(),
+            nn.Dropout(dropout * 0.5),  # Less dropout in final layers
+            nn.Linear(512, 1)
+        )
 
         # CURSOR: Initialize weights
         self._init_weights()
+
+        # CURSOR: Explicitly move the FULL module (all params + buffers) to the requested device.
+        target_device = torch.device(device)
+        if target_device.type == "cuda" and not torch.cuda.is_available():
+            # CURSOR: Safe fallback for CPU-only environments (unit tests, local runs without GPU).
+            target_device = torch.device("cpu")
+        self.to(target_device)
+        self.device = str(target_device)
 
     def _init_weights(self):
         """Initialize classifier weights using Xavier initialization."""
@@ -377,8 +377,9 @@ class MaxPerformanceSpeakerModel(nn.Module):
             map_location=device
         )
 
-        model = cls(model_name=checkpoint['config']['model_name'])
+        model = cls(model_name=checkpoint['config']['model_name'], device=device)
         model.load_state_dict(checkpoint['model_state_dict'])
+        # CURSOR: Model is already initialized on requested device; keep an explicit .to() for safety.
         model.to(device)
 
         return model
@@ -400,8 +401,12 @@ def create_model(
     Returns:
         Initialized model on specified device
     """
-    model = MaxPerformanceSpeakerModel(model_name=model_name, **kwargs)
-    model = model.to(device)
+    # CURSOR: Allow callers to pass device either as an explicit arg or inside **kwargs without crashing.
+    if "device" in kwargs:
+        device = kwargs.pop("device")
+
+    # CURSOR: Pass device into constructor to avoid unnecessary CPU->GPU->CPU moves.
+    model = MaxPerformanceSpeakerModel(model_name=model_name, device=device, **kwargs)
     return model
 
 

@@ -77,3 +77,4 @@ deprecated
 .github/copilot-instructions.md
 .github/copilot-instructions.md
 copilot-instructions.md
+*.log
