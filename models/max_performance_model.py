@@ -63,21 +63,23 @@ class MaxPerformanceSpeakerModel(nn.Module):
         self.model_name = model_name
         self.device = device
 
-        # CURSOR: Load DeBERTa-large encoder directly on GPU without CPU staging
-        with torch.cuda.device(device):
-            self.encoder = DebertaV2Model.from_pretrained(model_name)
-        self.hidden_size = self.encoder.config.hidden_size  # 1024 for large
-
-        # CURSOR: Initialize tokenizer and add special tokens; use_fast=True for Rust tokenizer (3-10x faster)
+        # CURSOR: Initialize tokenizer first (CPU only - just vocabulary)
         self.tokenizer = DebertaV2Tokenizer.from_pretrained(model_name, use_fast=True)
         num_added = self.tokenizer.add_tokens(self.SPECIAL_TOKENS)
-        if num_added > 0:
-            self.encoder.resize_token_embeddings(len(self.tokenizer))
-
+        
         # CURSOR: Store special token IDs for later use
         self.quote_token_id = self.tokenizer.convert_tokens_to_ids("[QUOTE]")
         self.altquote_token_id = self.tokenizer.convert_tokens_to_ids("[ALTQUOTE]")
         self.par_token_id = self.tokenizer.convert_tokens_to_ids("[PAR]")
+
+        # CURSOR: Load encoder and resize embeddings entirely on GPU - no CPU staging
+        with torch.cuda.device(device):
+            self.encoder = DebertaV2Model.from_pretrained(model_name)
+            # CURSOR: Resize embeddings inside GPU context so new rows created on GPU
+            if num_added > 0:
+                self.encoder.resize_token_embeddings(len(self.tokenizer))
+        
+        self.hidden_size = self.encoder.config.hidden_size  # 1024 for large
 
         # CURSOR: Freeze encoder layers if specified (for fine-tuning efficiency)
         if freeze_encoder_layers > 0:

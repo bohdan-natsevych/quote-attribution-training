@@ -1,416 +1,0 @@
-6.8s 1 0.00s - Debugger warning: It seems that frozen modules are being used, which may
-6.8s 2 0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
-6.8s 3 0.00s - to python to disable frozen modules.
-6.8s 4 0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
-7.3s 5 0.00s - Debugger warning: It seems that frozen modules are being used, which may
-7.3s 6 0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
-7.3s 7 0.00s - to python to disable frozen modules.
-7.3s 8 0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
-13.4s 9 Python: 3.11.13 (main, Jun  4 2025, 08:57:29) [GCC 11.4.0]
-13.4s 10 PyTorch: 2.6.0+cu124
-13.4s 11 CUDA available: True
-13.4s 12 CUDA version: 12.4
-13.4s 13 GPUs: 2
-13.4s 14 GPU 0: Tesla T4
-13.4s 15 GPU 1: Tesla T4
-13.4s 16 Data repo root: /kaggle/working/speaker-attribution-acl2023
-13.4s 17 
-13.4s 18 📥 Cloning training code repository...
-13.4s 19 Cloning into '/kaggle/working/quote-attribution-training'...
-13.8s 20 remote: Enumerating objects: 136, done.[K
-13.8s 21 remote: Counting objects:   0% (1/136)[Kremote: Counting objects:   1% (2/136)[Kremote: Counting objects:   2% (3/136)[Kremote: Counting objects:   3% (5/136)[Kremote: Counting objects:   4% (6/136)[Kremote: Counting objects:   5% (7/136)[Kremote: Counting objects:   6% (9/136)[Kremote: Counting objects:   7% (10/136)[Kremote: Counting objects:   8% (11/136)[Kremote: Counting objects:   9% (13/136)[Kremote: Counting objects:  10% (14/136)[Kremote: Counting objects:  11% (15/136)[Kremote: Counting objects:  12% (17/136)[Kremote: Counting objects:  13% (18/136)[Kremote: Counting objects:  14% (20/136)[Kremote: Counting objects:  15% (21/136)[Kremote: Counting objects:  16% (22/136)[Kremote: Counting objects:  17% (24/136)[Kremote: Counting objects:  18% (25/136)[Kremote: Counting objects:  19% (26/136)[Kremote: Counting objects:  20% (28/136)[Kremote: Counting objects:  21% (29/136)[Kremote: Counting objects:  22% (30/136)[Kremote: Counting objects:  23% (32/136)[Kremote: Counting objects:  24% (33/136)[Kremote: Counting objects:  25% (34/136)[Kremote: Counting objects:  26% (36/136)[Kremote: Counting objects:  27% (37/136)[Kremote: Counting objects:  28% (39/136)[Kremote: Counting objects:  29% (40/136)[Kremote: Counting objects:  30% (41/136)[Kremote: Counting objects:  31% (43/136)[Kremote: Counting objects:  32% (44/136)[Kremote: Counting objects:  33% (45/136)[Kremote: Counting objects:  34% (47/136)[Kremote: Counting objects:  35% (48/136)[Kremote: Counting objects:  36% (49/136)[Kremote: Counting objects:  37% (51/136)[Kremote: Counting objects:  38% (52/136)[Kremote: Counting objects:  39% (54/136)[Kremote: Counting objects:  40% (55/136)[Kremote: Counting objects:  41% (56/136)[Kremote: Counting objects:  42% (58/136)[Kremote: Counting objects:  43% (59/136)[Kremote: Counting objects:  44% (60/136)[Kremote: Counting objects:  45% (62/136)[Kremote: Counting objects:  46% (63/136)[Kremote: Counting objects:  47% (64/136)[Kremote: Counting objects:  48% (66/136)[Kremote: Counting objects:  49% (67/136)[Kremote: Counting objects:  50% (68/136)[Kremote: Counting objects:  51% (70/136)[Kremote: Counting objects:  52% (71/136)[Kremote: Counting objects:  53% (73/136)[Kremote: Counting objects:  54% (74/136)[Kremote: Counting objects:  55% (75/136)[Kremote: Counting objects:  56% (77/136)[Kremote: Counting objects:  57% (78/136)[Kremote: Counting objects:  58% (79/136)[Kremote: Counting objects:  59% (81/136)[Kremote: Counting objects:  60% (82/136)[Kremote: Counting objects:  61% (83/136)[Kremote: Counting objects:  62% (85/136)[Kremote: Counting objects:  63% (86/136)[Kremote: Counting objects:  64% (88/136)[Kremote: Counting objects:  65% (89/136)[Kremote: Counting objects:  66% (90/136)[Kremote: Counting objects:  67% (92/136)[Kremote: Counting objects:  68% (93/136)[Kremote: Counting objects:  69% (94/136)[Kremote: Counting objects:  70% (96/136)[Kremote: Counting objects:  71% (97/136)[Kremote: Counting objects:  72% (98/136)[Kremote: Counting objects:  73% (100/136)[Kremote: Counting objects:  74% (101/136)[Kremote: Counting objects:  75% (102/136)[Kremote: Counting objects:  76% (104/136)[Kremote: Counting objects:  77% (105/136)[Kremote: Counting objects:  78% (107/136)[Kremote: Counting objects:  79% (108/136)[Kremote: Counting objects:  80% (109/136)[Kremote: Counting objects:  81% (111/136)[Kremote: Counting objects:  82% (112/136)[Kremote: Counting objects:  83% (113/136)[Kremote: Counting objects:  84% (115/136)[Kremote: Counting objects:  85% (116/136)[Kremote: Counting objects:  86% (117/136)[Kremote: Counting objects:  87% (119/136)[Kremote: Counting objects:  88% (120/136)[Kremote: Counting objects:  89% (122/136)[Kremote: Counting objects:  90% (123/136)[Kremote: Counting objects:  91% (124/136)[Kremote: Counting objects:  92% (126/136)[Kremote: Counting objects:  93% (127/136)[Kremote: Counting objects:  94% (128/136)[Kremote: Counting objects:  95% (130/136)[Kremote: Counting objects:  96% (131/136)[Kremote: Counting objects:  97% (132/136)[Kremote: Counting objects:  98% (134/136)[Kremote: Counting objects:  99% (135/136)[Kremote: Counting objects: 100% (136/136)[Kremote: Counting objects: 100% (136/136), done.[K
-13.9s 22 remote: Compressing objects:   1% (1/88)[Kremote: Compressing objects:   2% (2/88)[Kremote: Compressing objects:   3% (3/88)[Kremote: Compressing objects:   4% (4/88)[Kremote: Compressing objects:   5% (5/88)[Kremote: Compressing objects:   6% (6/88)[Kremote: Compressing objects:   7% (7/88)[Kremote: Compressing objects:   9% (8/88)[Kremote: Compressing objects:  10% (9/88)[Kremote: Compressing objects:  11% (10/88)[Kremote: Compressing objects:  12% (11/88)[Kremote: Compressing objects:  13% (12/88)[Kremote: Compressing objects:  14% (13/88)[Kremote: Compressing objects:  15% (14/88)[Kremote: Compressing objects:  17% (15/88)[Kremote: Compressing objects:  18% (16/88)[Kremote: Compressing objects:  19% (17/88)[Kremote: Compressing objects:  20% (18/88)[Kremote: Compressing objects:  21% (19/88)[Kremote: Compressing objects:  22% (20/88)[Kremote: Compressing objects:  23% (21/88)[Kremote: Compressing objects:  25% (22/88)[Kremote: Compressing objects:  26% (23/88)[Kremote: Compressing objects:  27% (24/88)[Kremote: Compressing objects:  28% (25/88)[Kremote: Compressing objects:  29% (26/88)[Kremote: Compressing objects:  30% (27/88)[Kremote: Compressing objects:  31% (28/88)[Kremote: Compressing objects:  32% (29/88)[Kremote: Compressing objects:  34% (30/88)[Kremote: Compressing objects:  35% (31/88)[Kremote: Compressing objects:  36% (32/88)[Kremote: Compressing objects:  37% (33/88)[Kremote: Compressing objects:  38% (34/88)[Kremote: Compressing objects:  39% (35/88)[Kremote: Compressing objects:  40% (36/88)[Kremote: Compressing objects:  42% (37/88)[Kremote: Compressing objects:  43% (38/88)[Kremote: Compressing objects:  44% (39/88)[Kremote: Compressing objects:  45% (40/88)[Kremote: Compressing objects:  46% (41/88)[Kremote: Compressing objects:  47% (42/88)[Kremote: Compressing objects:  48% (43/88)[Kremote: Compressing objects:  50% (44/88)[Kremote: Compressing objects:  51% (45/88)[Kremote: Compressing objects:  52% (46/88)[Kremote: Compressing objects:  53% (47/88)[Kremote: Compressing objects:  54% (48/88)[Kremote: Compressing objects:  55% (49/88)[Kremote: Compressing objects:  56% (50/88)[Kremote: Compressing objects:  57% (51/88)[Kremote: Compressing objects:  59% (52/88)[Kremote: Compressing objects:  60% (53/88)[Kremote: Compressing objects:  61% (54/88)[Kremote: Compressing objects:  62% (55/88)[Kremote: Compressing objects:  63% (56/88)[Kremote: Compressing objects:  64% (57/88)[Kremote: Compressing objects:  65% (58/88)[Kremote: Compressing objects:  67% (59/88)[Kremote: Compressing objects:  68% (60/88)[Kremote: Compressing objects:  69% (61/88)[Kremote: Compressing objects:  70% (62/88)[Kremote: Compressing objects:  71% (63/88)[Kremote: Compressing objects:  72% (64/88)[Kremote: Compressing objects:  73% (65/88)[Kremote: Compressing objects:  75% (66/88)[Kremote: Compressing objects:  76% (67/88)[Kremote: Compressing objects:  77% (68/88)[Kremote: Compressing objects:  78% (69/88)[Kremote: Compressing objects:  79% (70/88)[Kremote: Compressing objects:  80% (71/88)[Kremote: Compressing objects:  81% (72/88)[Kremote: Compressing objects:  82% (73/88)[Kremote: Compressing objects:  84% (74/88)[Kremote: Compressing objects:  85% (75/88)[Kremote: Compressing objects:  86% (76/88)[Kremote: Compressing objects:  87% (77/88)[Kremote: Compressing objects:  88% (78/88)[Kremote: Compressing objects:  89% (79/88)[Kremote: Compressing objects:  90% (80/88)[Kremote: Compressing objects:  92% (81/88)[Kremote: Compressing objects:  93% (82/88)[Kremote: Compressing objects:  94% (83/88)[Kremote: Compressing objects:  95% (84/88)[Kremote: Compressing objects:  96% (85/88)[Kremote: Compressing objects:  97% (86/88)[Kremote: Compressing objects:  98% (87/88)[Kremote: Compressing objects: 100% (88/88)[Kremote: Compressing objects: 100% (88/88), done.[K
-13.9s 23 Receiving objects:   0% (1/136)Receiving objects:   1% (2/136)Receiving objects:   2% (3/136)Receiving objects:   3% (5/136)Receiving objects:   4% (6/136)Receiving objects:   5% (7/136)Receiving objects:   6% (9/136)Receiving objects:   7% (10/136)Receiving objects:   8% (11/136)Receiving objects:   9% (13/136)Receiving objects:  10% (14/136)Receiving objects:  11% (15/136)Receiving objects:  12% (17/136)Receiving objects:  13% (18/136)Receiving objects:  14% (20/136)Receiving objects:  15% (21/136)Receiving objects:  16% (22/136)Receiving objects:  17% (24/136)Receiving objects:  18% (25/136)Receiving objects:  19% (26/136)Receiving objects:  20% (28/136)Receiving objects:  21% (29/136)Receiving objects:  22% (30/136)Receiving objects:  23% (32/136)Receiving objects:  24% (33/136)Receiving objects:  25% (34/136)Receiving objects:  26% (36/136)Receiving objects:  27% (37/136)Receiving objects:  28% (39/136)Receiving objects:  29% (40/136)Receiving objects:  30% (41/136)Receiving objects:  31% (43/136)Receiving objects:  32% (44/136)Receiving objects:  33% (45/136)Receiving objects:  34% (47/136)Receiving objects:  35% (48/136)Receiving objects:  36% (49/136)Receiving objects:  37% (51/136)Receiving objects:  38% (52/136)Receiving objects:  39% (54/136)Receiving objects:  40% (55/136)Receiving objects:  41% (56/136)Receiving objects:  42% (58/136)Receiving objects:  43% (59/136)Receiving objects:  44% (60/136)Receiving objects:  45% (62/136)Receiving objects:  46% (63/136)Receiving objects:  47% (64/136)Receiving objects:  48% (66/136)Receiving objects:  49% (67/136)Receiving objects:  50% (68/136)Receiving objects:  51% (70/136)Receiving objects:  52% (71/136)Receiving objects:  53% (73/136)Receiving objects:  54% (74/136)Receiving objects:  55% (75/136)Receiving objects:  56% (77/136)Receiving objects:  57% (78/136)Receiving objects:  58% (79/136)Receiving objects:  59% (81/136)Receiving objects:  60% (82/136)Receiving objects:  61% (83/136)Receiving objects:  62% (85/136)Receiving objects:  63% (86/136)Receiving objects:  64% (88/136)Receiving objects:  65% (89/136)Receiving objects:  66% (90/136)Receiving objects:  67% (92/136)Receiving objects:  68% (93/136)Receiving objects:  69% (94/136)Receiving objects:  70% (96/136)Receiving objects:  71% (97/136)Receiving objects:  72% (98/136)Receiving objects:  73% (100/136)Receiving objects:  74% (101/136)Receiving objects:  75% (102/136)Receiving objects:  76% (104/136)Receiving objects:  77% (105/136)Receiving objects:  78% (107/136)Receiving objects:  79% (108/136)Receiving objects:  80% (109/136)Receiving objects:  81% (111/136)Receiving objects:  82% (112/136)remote: Total 136 (delta 75), reused 106 (delta 45), pack-reused 0 (from 0)[K
-13.9s 24 Receiving objects:  83% (113/136)Receiving objects:  84% (115/136)Receiving objects:  85% (116/136)Receiving objects:  86% (117/136)Receiving objects:  87% (119/136)Receiving objects:  88% (120/136)Receiving objects:  89% (122/136)Receiving objects:  90% (123/136)Receiving objects:  91% (124/136)Receiving objects:  92% (126/136)Receiving objects:  93% (127/136)Receiving objects:  94% (128/136)Receiving objects:  95% (130/136)Receiving objects:  96% (131/136)Receiving objects:  97% (132/136)Receiving objects:  98% (134/136)Receiving objects:  99% (135/136)Receiving objects: 100% (136/136)Receiving objects: 100% (136/136), 162.78 KiB | 3.32 MiB/s, done.
-13.9s 25 Resolving deltas:   0% (0/75)Resolving deltas:   1% (1/75)Resolving deltas:   2% (2/75)Resolving deltas:   4% (3/75)Resolving deltas:   5% (4/75)Resolving deltas:   6% (5/75)Resolving deltas:   8% (6/75)Resolving deltas:   9% (7/75)Resolving deltas:  10% (8/75)Resolving deltas:  12% (9/75)Resolving deltas:  13% (10/75)Resolving deltas:  14% (11/75)Resolving deltas:  16% (12/75)Resolving deltas:  17% (13/75)Resolving deltas:  18% (14/75)Resolving deltas:  20% (15/75)Resolving deltas:  21% (16/75)Resolving deltas:  22% (17/75)Resolving deltas:  24% (18/75)Resolving deltas:  25% (19/75)Resolving deltas:  26% (20/75)Resolving deltas:  28% (21/75)Resolving deltas:  29% (22/75)Resolving deltas:  30% (23/75)Resolving deltas:  32% (24/75)Resolving deltas:  33% (25/75)Resolving deltas:  34% (26/75)Resolving deltas:  36% (27/75)Resolving deltas:  37% (28/75)Resolving deltas:  38% (29/75)Resolving deltas:  40% (30/75)Resolving deltas:  41% (31/75)Resolving deltas:  42% (32/75)Resolving deltas:  44% (33/75)Resolving deltas:  45% (34/75)Resolving deltas:  46% (35/75)Resolving deltas:  48% (36/75)Resolving deltas:  49% (37/75)Resolving deltas:  50% (38/75)Resolving deltas:  52% (39/75)Resolving deltas:  53% (40/75)Resolving deltas:  54% (41/75)Resolving deltas:  56% (42/75)Resolving deltas:  57% (43/75)Resolving deltas:  58% (44/75)Resolving deltas:  60% (45/75)Resolving deltas:  61% (46/75)Resolving deltas:  62% (47/75)Resolving deltas:  64% (48/75)Resolving deltas:  65% (49/75)Resolving deltas:  66% (50/75)Resolving deltas:  68% (51/75)Resolving deltas:  69% (52/75)Resolving deltas:  70% (53/75)Resolving deltas:  72% (54/75)Resolving deltas:  73% (55/75)Resolving deltas:  74% (56/75)Resolving deltas:  76% (57/75)Resolving deltas:  77% (58/75)Resolving deltas:  78% (59/75)Resolving deltas:  80% (60/75)Resolving deltas:  81% (61/75)Resolving deltas:  82% (62/75)Resolving deltas:  84% (63/75)Resolving deltas:  85% (64/75)Resolving deltas:  86% (65/75)Resolving deltas:  88% (66/75)Resolving deltas:  89% (67/75)Resolving deltas:  90% (68/75)Resolving deltas:  92% (69/75)Resolving deltas:  94% (71/75)Resolving deltas:  96% (72/75)Resolving deltas:  97% (73/75)Resolving deltas:  98% (74/75)Resolving deltas: 100% (75/75)Resolving deltas: 100% (75/75), done.
-14.0s 26 ✅ Added /kaggle/working/quote-attribution-training to Python path
-14.0s 27 Data root: /kaggle/working/speaker-attribution-acl2023/data
-14.0s 28 Output root: /kaggle/working
-27.8s 29 [33m  WARNING: Retrying (Retry(total=4, connect=None, read=None, redirect=None, status=None)) after connection broken by 'ProtocolError('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))': /packages/f5/e5/53c0a1c428f0976bf22f513d79c73000926cb00b9c138d8e02daf2102e18/pyarrow-22.0.0-cp311-cp311-manylinux_2_28_x86_64.whl.metadata[0m[33m
-106.8s 30 [0m[31mERROR: pip's dependency resolver does not currently take into account all the packages that are installed. This behaviour is the source of the following dependency conflicts.
-106.8s 31 bigframes 2.12.0 requires google-cloud-bigquery-storage<3.0.0,>=2.30.0, which is not installed.
-106.8s 32 pylibcudf-cu12 25.2.2 requires pyarrow<20.0.0a0,>=14.0.0; platform_machine == "x86_64", but you have pyarrow 22.0.0 which is incompatible.
-106.8s 33 cudf-cu12 25.2.2 requires pyarrow<20.0.0a0,>=14.0.0; platform_machine == "x86_64", but you have pyarrow 22.0.0 which is incompatible.
-106.8s 34 bigframes 2.12.0 requires rich<14,>=12.4.4, but you have rich 14.2.0 which is incompatible.
-106.8s 35 libcugraph-cu12 25.6.0 requires libraft-cu12==25.6.*, but you have libraft-cu12 25.2.0 which is incompatible.
-106.8s 36 cudf-polars-cu12 25.6.0 requires pylibcudf-cu12==25.6.*, but you have pylibcudf-cu12 25.2.2 which is incompatible.
-106.8s 37 pylibcugraph-cu12 25.6.0 requires pylibraft-cu12==25.6.*, but you have pylibraft-cu12 25.2.0 which is incompatible.
-106.8s 38 pylibcugraph-cu12 25.6.0 requires rmm-cu12==25.6.*, but you have rmm-cu12 25.2.0 which is incompatible.[0m[31m
-107.4s 39 [0mNote: you may need to restart the kernel to use updated packages.
-108.7s 40 Selected: Target 1: DeBERTa-large + Augmentation
-108.7s 41 Target accuracy: 85%
-108.7s 42 Datasets: ['pdnc']
-108.7s 43 Output dir: /kaggle/working/target_1
-108.7s 44 RUN_ENV: kaggle | checkpoint_every=500 | grad_accum=4
-108.8s 45 Cloning into '/kaggle/working/speaker-attribution-acl2023/data/pdnc'...
-108.9s 46 
-108.9s 47 ============================================================
-108.9s 48 AUTO-DOWNLOAD DATASETS
-108.9s 49 ============================================================
-108.9s 50 Datasets to download: ['pdnc']
-108.9s 51 
-108.9s 52 📦 Processing PDNC (pdnc)...
-108.9s 53 Description: Pride and Prejudice Dialog Novel Corpus - 22 novels, literature focus
-108.9s 54 Target directory: /kaggle/working/speaker-attribution-acl2023/data/pdnc
-109.0s 55 Cloning into '/kaggle/working/speaker-attribution-acl2023/data/pdnc'...
-109.0s 56 
-109.0s 57 Cloning into '/kaggle/working/speaker-attribution-acl2023/data/pdnc'...
-117.5s 58 Updating files:  27% (207/762)Updating files:  28% (214/762)Updating files:  29% (221/762)Updating files:  30% (229/762)Updating files:  31% (237/762)Updating files:  27% (207/762)Updating files:  28% (214/762)Updating files:  29% (221/762)Updating files:  30% (229/762)Updating files:  31% (237/762)
-117.7s 59 Updating files:  27% (207/762)Updating files:  28% (214/762)Updating files:  29% (221/762)Updating files:  30% (229/762)Updating files:  31% (237/762)Updating files:  32% (244/762)Updating files:  33% (252/762)Updating files:  34% (260/762)Updating files:  35% (267/762)Updating files:  36% (275/762)Updating files:  32% (244/762)Updating files:  33% (252/762)Updating files:  34% (260/762)Updating files:  35% (267/762)Updating files:  36% (275/762)
-117.9s 60 Updating files:  32% (244/762)Updating files:  33% (252/762)Updating files:  34% (260/762)Updating files:  35% (267/762)Updating files:  36% (275/762)Updating files:  37% (282/762)Updating files:  38% (290/762)Updating files:  39% (298/762)Updating files:  40% (305/762)Updating files:  37% (282/762)Updating files:  38% (290/762)Updating files:  39% (298/762)Updating files:  40% (305/762)
-118.1s 61 Updating files:  37% (282/762)Updating files:  38% (290/762)Updating files:  39% (298/762)Updating files:  40% (305/762)Updating files:  41% (313/762)Updating files:  42% (321/762)Updating files:  43% (328/762)Updating files:  44% (336/762)Updating files:  45% (343/762)Updating files:  46% (351/762)Updating files:  47% (359/762)Updating files:  48% (366/762)Updating files:  41% (313/762)Updating files:  42% (321/762)Updating files:  43% (328/762)Updating files:  44% (336/762)Updating files:  45% (343/762)Updating files:  46% (351/762)Updating files:  47% (359/762)Updating files:  48% (366/762)
-118.4s 62 Updating files:  41% (313/762)Updating files:  42% (321/762)Updating files:  43% (328/762)Updating files:  44% (336/762)Updating files:  45% (343/762)Updating files:  46% (351/762)Updating files:  47% (359/762)Updating files:  48% (366/762)Updating files:  49% (374/762)Updating files:  50% (381/762)Updating files:  51% (389/762)Updating files:  51% (390/762)Updating files:  52% (397/762)Updating files:  53% (404/762)Updating files:  54% (412/762)Updating files:  55% (420/762)Updating files:  49% (374/762)Updating files:  50% (381/762)Updating files:  51% (389/762)Updating files:  51% (390/762)Updating files:  52% (397/762)Updating files:  53% (404/762)Updating files:  54% (412/762)Updating files:  55% (420/762)
-118.6s 63 Updating files:  49% (374/762)Updating files:  50% (381/762)Updating files:  51% (389/762)Updating files:  51% (390/762)Updating files:  52% (397/762)Updating files:  53% (404/762)Updating files:  54% (412/762)Updating files:  55% (420/762)Updating files:  56% (427/762)Updating files:  57% (435/762)Updating files:  58% (442/762)Updating files:  59% (450/762)Updating files:  60% (458/762)Updating files:  61% (465/762)Updating files:  56% (427/762)Updating files:  57% (435/762)Updating files:  58% (442/762)Updating files:  59% (450/762)Updating files:  60% (458/762)Updating files:  61% (465/762)
-118.8s 64 Updating files:  56% (427/762)Updating files:  57% (435/762)Updating files:  58% (442/762)Updating files:  59% (450/762)Updating files:  60% (458/762)Updating files:  61% (465/762)Updating files:  62% (473/762)Updating files:  63% (481/762)Updating files:  64% (488/762)Updating files:  65% (496/762)Updating files:  66% (503/762)Updating files:  67% (511/762)Updating files:  68% (519/762)Updating files:  69% (526/762)Updating files:  70% (534/762)Updating files:  71% (542/762)Updating files:  72% (549/762)Updating files:  73% (557/762)Updating files:  74% (564/762)Updating files:  75% (572/762)Updating files:  76% (580/762)Updating files:  77% (587/762)Updating files:  78% (595/762)Updating files:  79% (602/762)Updating files:  80% (610/762)Updating files:  81% (618/762)Updating files:  82% (625/762)Updating files:  83% (633/762)Updating files:  84% (641/762)Updating files:  85% (648/762)Updating files:  86% (656/762)Updating files:  87% (663/762)Updating files:  88% (671/762)Updating files:  89% (679/762)Updating files:  62% (473/762)Updating files:  63% (481/762)Updating files:  64% (488/762)Updating files:  65% (496/762)Updating files:  66% (503/762)Updating files:  67% (511/762)Updating files:  68% (519/762)Updating files:  69% (526/762)Updating files:  70% (534/762)Updating files:  71% (542/762)Updating files:  72% (549/762)Updating files:  73% (557/762)Updating files:  74% (564/762)Updating files:  75% (572/762)Updating files:  76% (580/762)Updating files:  77% (587/762)Updating files:  78% (595/762)Updating files:  79% (602/762)Updating files:  80% (610/762)Updating files:  81% (618/762)Updating files:  82% (625/762)Updating files:  83% (633/762)Updating files:  84% (641/762)Updating files:  85% (648/762)Updating files:  86% (656/762)Updating files:  87% (663/762)Updating files:  88% (671/762)Updating files:  89% (679/762)
-119.0s 65 Updating files:  62% (473/762)Updating files:  63% (481/762)Updating files:  64% (488/762)Updating files:  65% (496/762)Updating files:  66% (503/762)Updating files:  67% (511/762)Updating files:  68% (519/762)Updating files:  69% (526/762)Updating files:  70% (534/762)Updating files:  71% (542/762)Updating files:  72% (549/762)Updating files:  73% (557/762)Updating files:  74% (564/762)Updating files:  75% (572/762)Updating files:  76% (580/762)Updating files:  77% (587/762)Updating files:  78% (595/762)Updating files:  79% (602/762)Updating files:  80% (610/762)Updating files:  81% (618/762)Updating files:  82% (625/762)Updating files:  83% (633/762)Updating files:  84% (641/762)Updating files:  85% (648/762)Updating files:  86% (656/762)Updating files:  87% (663/762)Updating files:  88% (671/762)Updating files:  89% (679/762)Updating files:  90% (686/762)Updating files:  91% (694/762)Updating files:  92% (702/762)Updating files:  93% (709/762)Updating files:  94% (717/762)Updating files:  95% (724/762)Updating files:  90% (686/762)Updating files:  91% (694/762)Updating files:  92% (702/762)Updating files:  93% (709/762)Updating files:  94% (717/762)Updating files:  95% (724/762)
-119.4s 66 Updating files:  90% (686/762)Updating files:  91% (694/762)Updating files:  92% (702/762)Updating files:  93% (709/762)Updating files:  94% (717/762)Updating files:  95% (724/762)Updating files:  96% (732/762)Updating files:  96% (735/762)Updating files:  97% (740/762)Updating files:  96% (732/762)Updating files:  96% (735/762)Updating files:  97% (740/762)
-119.7s 67 Updating files:  96% (732/762)Updating files:  96% (735/762)Updating files:  97% (740/762)Updating files:  98% (747/762)Updating files:  99% (755/762)Updating files: 100% (762/762)Updating files: 100% (762/762), done.
-119.7s 68 
-119.7s 69 ============================================================
-119.7s 70 DATASET DOWNLOAD COMPLETE
-119.7s 71 ============================================================
-119.7s 72 📚 Downloaded datasets: ['pdnc']
-119.7s 73 📁 Base directory: /kaggle/working/speaker-attribution-acl2023/data
-119.7s 74 ============================================================
-119.7s 75 
-119.7s 76 Updating files:  98% (747/762)Updating files:  99% (755/762)Updating files: 100% (762/762)Updating files: 100% (762/762), done.
-119.7s 77 
-119.7s 78 Updating files:  98% (747/762)Updating files:  99% (755/762)Updating files: 100% (762/762)Updating files: 100% (762/762), done.
-119.7s 79 🔍 Detected 2 GPU(s)
-119.7s 80 GPU 0: Tesla T4 (14.7 GB)
-119.7s 81 GPU 1: Tesla T4 (14.7 GB)
-119.7s 82 
-119.7s 83 ✅ Multi-GPU training via DeepSpeed ZeRO-2
-119.7s 84 Config: /kaggle/working/target_1/deepspeed_config.json
-119.7s 85 Effective batch: 8 x 2 x 4 = 64
-129.5s 86 00:25:12 - INFO - datasets - Disabling Tensorflow because USE_TORCH is set
-129.5s 87 00:25:12 - INFO - datasets - JAX version 0.5.2 available.
-131.0s 88 ✅ Logging configured - you should see output below during training
-158.1s 89 /usr/local/lib/python3.11/dist-packages/pydantic/_internal/_generate_schema.py:2249: UnsupportedFieldAttributeWarning: The 'repr' attribute with value False was provided to the `Field()` function, which has no effect in the context it was used. 'repr' is field-specific metadata, and can only be attached to a model field using `Annotated` metadata or by assignment. This may have happened because an `Annotated` type alias using the `type` statement was used, or if the `Field()` function was attached to a single member of a union type.
-158.1s 90 warnings.warn(
-158.1s 91 /usr/local/lib/python3.11/dist-packages/pydantic/_internal/_generate_schema.py:2249: UnsupportedFieldAttributeWarning: The 'frozen' attribute with value True was provided to the `Field()` function, which has no effect in the context it was used. 'frozen' is field-specific metadata, and can only be attached to a model field using `Annotated` metadata or by assignment. This may have happened because an `Annotated` type alias using the `type` statement was used, or if the `Field()` function was attached to a single member of a union type.
-158.1s 92 warnings.warn(
-158.1s 93 
-158.1s 94 /usr/local/lib/python3.11/dist-packages/pydantic/_internal/_generate_schema.py:2249: UnsupportedFieldAttributeWarning: The 'repr' attribute with value False was provided to the `Field()` function, which has no effect in the context it was used. 'repr' is field-specific metadata, and can only be attached to a model field using `Annotated` metadata or by assignment. This may have happened because an `Annotated` type alias using the `type` statement was used, or if the `Field()` function was attached to a single member of a union type.
-158.1s 95 warnings.warn(
-158.1s 96 /usr/local/lib/python3.11/dist-packages/pydantic/_internal/_generate_schema.py:2249: UnsupportedFieldAttributeWarning: The 'frozen' attribute with value True was provided to the `Field()` function, which has no effect in the context it was used. 'frozen' is field-specific metadata, and can only be attached to a model field using `Annotated` metadata or by assignment. This may have happened because an `Annotated` type alias using the `type` statement was used, or if the `Field()` function was attached to a single member of a union type.
-158.1s 97 warnings.warn(
-159.5s 98 GPUs: 2 | FP16: True
-159.7s 99 📋 PDNC Folds to train: [0, 1]
-159.7s 100 🔍 Running pre-flight data validation...
-159.7s 101 
-159.7s 102 📂 Loading PDNC from /kaggle/working/speaker-attribution-acl2023/data/pdnc...
-159.7s 103 Found PDNC training data at /kaggle/working/speaker-attribution-acl2023/data/pdnc/training/data/pdnc
-159.7s 104 Found 15 quote files in leave-x-out splits
-159.7s 105 Processing: quotes.test.txt (6059 lines)
-159.7s 106 First line preview: AliceInWonderland	Q0-0	CHAR_0	52	[[55, 56, 1, "CHAR_0"], [61, 62, 1, "CHAR_0"], [36, 38, 0, "CHAR_4"], [65, 66, 1, "CHAR...
-163.4s 107 Loaded 161542 samples, parse_errors=16788
-163.4s 108 ✅ Loaded 161,542 samples from PDNC
-163.4s 109 ✅ Pre-flight passed: 161,542 samples from 22 books
-163.4s 110 ✅ Lazy fold iterator created (folds load on-demand)
-163.4s 111 🔄 Will train 2 fold(s): [0, 1]
-163.4s 112 ⚙️ Gradient checkpointing: True
-163.4s 113 ✅ Training helpers ready!
-163.7s 114 ======================================================================
-163.7s 115 🚀 MULTI-FOLD TRAINING: Target 1: DeBERTa-large + Augmentation
-163.7s 116 ⏳ Initializing training logger...
-163.7s 117 ℹ️  wandb disabled (set WANDB_MODE=online to enable)
-163.7s 118 ✅ Training logger ready
-163.7s 119 Folds to train: [0, 1]
-163.7s 120 GPUs: 2 | Batch/GPU: 8
-163.7s 121 Effective batch: 64
-163.7s 122 ======================================================================
-163.7s 123 
-163.7s 124 ======================================================================
-163.7s 125 📂 FOLD 1/2 (index=0)
-163.7s 126 ======================================================================
-163.7s 127 ⏳ Loading PDNC fold 0...
-164.0s 128 
-164.0s 129 📂 Loading PDNC from /kaggle/working/speaker-attribution-acl2023/data/pdnc...
-164.0s 130 Found PDNC training data at /kaggle/working/speaker-attribution-acl2023/data/pdnc/training/data/pdnc
-164.0s 131 Found 15 quote files in leave-x-out splits
-164.0s 132 Processing: quotes.test.txt (6059 lines)
-164.0s 133 First line preview: AliceInWonderland	Q0-0	CHAR_0	52	[[55, 56, 1, "CHAR_0"], [61, 62, 1, "CHAR_0"], [36, 38, 0, "CHAR_4"], [65, 66, 1, "CHAR...
-168.1s 134 Loaded 161542 samples, parse_errors=16788
-168.1s 135 ✅ Loaded 161,542 samples from PDNC
-168.4s 136 ✅ Data loaded in 4.7s
-168.4s 137 ⏳ Finalizing candidate sets...
-174.9s 138 Train candidates done (89342 samples)
-177.8s 139 Val candidates done (29013 samples)
-181.0s 140 ✅ Candidate sets finalized in 12.6s
-181.0s 141 Train: 89342 | Val: 29013 | Test: 42673
-181.0s 142 ⏳ Initializing fresh model (microsoft/deberta-v3-large)...
-182.9s 143 loading configuration file config.json from cache at /root/.cache/huggingface/hub/models--microsoft--deberta-v3-large/snapshots/64a8c8eab3e352a784c658aef62be1662607476f/config.json
-182.9s 144 
-182.9s 145 loading configuration file config.json from cache at /root/.cache/huggingface/hub/models--microsoft--deberta-v3-large/snapshots/64a8c8eab3e352a784c658aef62be1662607476f/config.json
-182.9s 146 Model config DebertaV2Config {
-182.9s 147 "attention_probs_dropout_prob": 0.1,
-182.9s 148 "hidden_act": "gelu",
-182.9s 149 "hidden_dropout_prob": 0.1,
-182.9s 150 "hidden_size": 1024,
-182.9s 151 "initializer_range": 0.02,
-182.9s 152 "intermediate_size": 4096,
-182.9s 153 "layer_norm_eps": 1e-07,
-182.9s 154 "legacy": true,
-182.9s 155 "max_position_embeddings": 512,
-182.9s 156 "max_relative_positions": -1,
-182.9s 157 "model_type": "deberta-v2",
-182.9s 158 "norm_rel_ebd": "layer_norm",
-182.9s 159 "num_attention_heads": 16,
-182.9s 160 "num_hidden_layers": 24,
-182.9s 161 "pad_token_id": 0,
-182.9s 162 "pooler_dropout": 0,
-182.9s 163 "pooler_hidden_act": "gelu",
-182.9s 164 "pooler_hidden_size": 1024,
-182.9s 165 "pos_att_type": [
-182.9s 166 "p2c",
-182.9s 167 "c2p"
-182.9s 168 ],
-182.9s 169 "position_biased_input": false,
-182.9s 170 "position_buckets": 256,
-182.9s 171 "relative_attention": true,
-182.9s 172 "share_att_key": true,
-182.9s 173 "transformers_version": "4.53.3",
-182.9s 174 "type_vocab_size": 0,
-182.9s 175 "vocab_size": 128100
-182.9s 176 }
-182.9s 177 
-182.9s 178 
-182.9s 179 Model config DebertaV2Config {
-182.9s 180 "attention_probs_dropout_prob": 0.1,
-182.9s 181 "hidden_act": "gelu",
-182.9s 182 "hidden_dropout_prob": 0.1,
-182.9s 183 "hidden_size": 1024,
-182.9s 184 "initializer_range": 0.02,
-182.9s 185 "intermediate_size": 4096,
-182.9s 186 "layer_norm_eps": 1e-07,
-182.9s 187 "legacy": true,
-182.9s 188 "max_position_embeddings": 512,
-182.9s 189 "max_relative_positions": -1,
-182.9s 190 "model_type": "deberta-v2",
-182.9s 191 "norm_rel_ebd": "layer_norm",
-182.9s 192 "num_attention_heads": 16,
-182.9s 193 "num_hidden_layers": 24,
-182.9s 194 "pad_token_id": 0,
-182.9s 195 "pooler_dropout": 0,
-182.9s 196 "pooler_hidden_act": "gelu",
-182.9s 197 "pooler_hidden_size": 1024,
-182.9s 198 "pos_att_type": [
-182.9s 199 "p2c",
-182.9s 200 "c2p"
-182.9s 201 ],
-182.9s 202 "position_biased_input": false,
-182.9s 203 "position_buckets": 256,
-182.9s 204 "relative_attention": true,
-182.9s 205 "share_att_key": true,
-182.9s 206 "transformers_version": "4.53.3",
-182.9s 207 "type_vocab_size": 0,
-182.9s 208 "vocab_size": 128100
-182.9s 209 }
-182.9s 210 
-188.8s 211 loading weights file pytorch_model.bin from cache at /root/.cache/huggingface/hub/models--microsoft--deberta-v3-large/snapshots/64a8c8eab3e352a784c658aef62be1662607476f/pytorch_model.bin
-188.8s 212 
-188.8s 213 loading weights file pytorch_model.bin from cache at /root/.cache/huggingface/hub/models--microsoft--deberta-v3-large/snapshots/64a8c8eab3e352a784c658aef62be1662607476f/pytorch_model.bin
-188.9s 214 Attempting to create safetensors variant
-188.9s 215 
-188.9s 216 Attempting to create safetensors variant
-189.2s 217 Safetensors PR exists
-189.2s 218 
-189.2s 219 Safetensors PR exists
-190.1s 220 Some weights of the model checkpoint at microsoft/deberta-v3-large were not used when initializing DebertaV2Model: ['lm_predictions.lm_head.LayerNorm.bias', 'lm_predictions.lm_head.LayerNorm.weight', 'lm_predictions.lm_head.bias', 'lm_predictions.lm_head.dense.bias', 'lm_predictions.lm_head.dense.weight', 'mask_predictions.LayerNorm.bias', 'mask_predictions.LayerNorm.weight', 'mask_predictions.classifier.bias', 'mask_predictions.classifier.weight', 'mask_predictions.dense.bias', 'mask_predictions.dense.weight']
-190.1s 221 - This IS expected if you are initializing DebertaV2Model from the checkpoint of a model trained on another task or with another architecture (e.g. initializing a BertForSequenceClassification model from a BertForPreTraining model).
-190.1s 222 - This IS NOT expected if you are initializing DebertaV2Model from the checkpoint of a model that you expect to be exactly identical (initializing a BertForSequenceClassification model from a BertForSequenceClassification model).
-190.1s 223 
-190.1s 224 Some weights of the model checkpoint at microsoft/deberta-v3-large were not used when initializing DebertaV2Model: ['lm_predictions.lm_head.LayerNorm.bias', 'lm_predictions.lm_head.LayerNorm.weight', 'lm_predictions.lm_head.bias', 'lm_predictions.lm_head.dense.bias', 'lm_predictions.lm_head.dense.weight', 'mask_predictions.LayerNorm.bias', 'mask_predictions.LayerNorm.weight', 'mask_predictions.classifier.bias', 'mask_predictions.classifier.weight', 'mask_predictions.dense.bias', 'mask_predictions.dense.weight']
-190.1s 225 - This IS expected if you are initializing DebertaV2Model from the checkpoint of a model trained on another task or with another architecture (e.g. initializing a BertForSequenceClassification model from a BertForPreTraining model).
-190.1s 226 - This IS NOT expected if you are initializing DebertaV2Model from the checkpoint of a model that you expect to be exactly identical (initializing a BertForSequenceClassification model from a BertForSequenceClassification model).
-190.1s 227 All the weights of DebertaV2Model were initialized from the model checkpoint at microsoft/deberta-v3-large.
-190.1s 228 If your task is similar to the task the model of the checkpoint was trained on, you can already use DebertaV2Model for predictions without further training.
-190.1s 229 
-190.1s 230 All the weights of DebertaV2Model were initialized from the model checkpoint at microsoft/deberta-v3-large.
-190.1s 231 If your task is similar to the task the model of the checkpoint was trained on, you can already use DebertaV2Model for predictions without further training.
-193.9s 232 loading file spm.model from cache at /root/.cache/huggingface/hub/models--microsoft--deberta-v3-large/snapshots/64a8c8eab3e352a784c658aef62be1662607476f/spm.model
-193.9s 233 
-193.9s 234 loading file spm.model from cache at /root/.cache/huggingface/hub/models--microsoft--deberta-v3-large/snapshots/64a8c8eab3e352a784c658aef62be1662607476f/spm.model
-193.9s 235 loading file added_tokens.json from cache at None
-193.9s 236 
-193.9s 237 loading file added_tokens.json from cache at None
-193.9s 238 loading file special_tokens_map.json from cache at None
-193.9s 239 
-193.9s 240 loading file special_tokens_map.json from cache at None
-193.9s 241 loading file tokenizer_config.json from cache at /root/.cache/huggingface/hub/models--microsoft--deberta-v3-large/snapshots/64a8c8eab3e352a784c658aef62be1662607476f/tokenizer_config.json
-193.9s 242 
-193.9s 243 loading file tokenizer_config.json from cache at /root/.cache/huggingface/hub/models--microsoft--deberta-v3-large/snapshots/64a8c8eab3e352a784c658aef62be1662607476f/tokenizer_config.json
-193.9s 244 loading file tokenizer.json from cache at None
-193.9s 245 
-193.9s 246 loading file tokenizer.json from cache at None
-193.9s 247 loading file chat_template.jinja from cache at None
-193.9s 248 
-193.9s 249 loading file chat_template.jinja from cache at None
-193.9s 250 loading configuration file config.json from cache at /root/.cache/huggingface/hub/models--microsoft--deberta-v3-large/snapshots/64a8c8eab3e352a784c658aef62be1662607476f/config.json
-193.9s 251 
-193.9s 252 loading configuration file config.json from cache at /root/.cache/huggingface/hub/models--microsoft--deberta-v3-large/snapshots/64a8c8eab3e352a784c658aef62be1662607476f/config.json
-194.1s 253 Model config DebertaV2Config {
-194.1s 254 "attention_probs_dropout_prob": 0.1,
-194.1s 255 "hidden_act": "gelu",
-194.1s 256 "hidden_dropout_prob": 0.1,
-194.1s 257 "hidden_size": 1024,
-194.1s 258 "initializer_range": 0.02,
-194.1s 259 "intermediate_size": 4096,
-194.1s 260 "layer_norm_eps": 1e-07,
-194.1s 261 "legacy": true,
-194.1s 262 "max_position_embeddings": 512,
-194.1s 263 "max_relative_positions": -1,
-194.1s 264 "model_type": "deberta-v2",
-194.1s 265 "norm_rel_ebd": "layer_norm",
-194.1s 266 "num_attention_heads": 16,
-194.1s 267 "num_hidden_layers": 24,
-194.1s 268 "pad_token_id": 0,
-194.1s 269 "pooler_dropout": 0,
-194.1s 270 "pooler_hidden_act": "gelu",
-194.1s 271 "pooler_hidden_size": 1024,
-194.1s 272 "pos_att_type": [
-194.1s 273 "p2c",
-194.1s 274 "c2p"
-194.1s 275 ],
-194.1s 276 "position_biased_input": false,
-194.1s 277 "position_buckets": 256,
-194.1s 278 "relative_attention": true,
-194.1s 279 "share_att_key": true,
-194.1s 280 "transformers_version": "4.53.3",
-194.1s 281 "type_vocab_size": 0,
-194.1s 282 "vocab_size": 128100
-194.1s 283 }
-194.1s 284 
-194.1s 285 
-194.1s 286 Model config DebertaV2Config {
-194.1s 287 "attention_probs_dropout_prob": 0.1,
-194.1s 288 "hidden_act": "gelu",
-194.1s 289 "hidden_dropout_prob": 0.1,
-194.1s 290 "hidden_size": 1024,
-194.1s 291 "initializer_range": 0.02,
-194.1s 292 "intermediate_size": 4096,
-194.1s 293 "layer_norm_eps": 1e-07,
-194.1s 294 "legacy": true,
-194.1s 295 "max_position_embeddings": 512,
-194.1s 296 "max_relative_positions": -1,
-194.1s 297 "model_type": "deberta-v2",
-194.1s 298 "norm_rel_ebd": "layer_norm",
-194.1s 299 "num_attention_heads": 16,
-194.1s 300 "num_hidden_layers": 24,
-194.1s 301 "pad_token_id": 0,
-194.1s 302 "pooler_dropout": 0,
-194.1s 303 "pooler_hidden_act": "gelu",
-194.1s 304 "pooler_hidden_size": 1024,
-194.1s 305 "pos_att_type": [
-194.1s 306 "p2c",
-194.1s 307 "c2p"
-194.1s 308 ],
-194.1s 309 "position_biased_input": false,
-194.1s 310 "position_buckets": 256,
-194.1s 311 "relative_attention": true,
-194.1s 312 "share_att_key": true,
-194.1s 313 "transformers_version": "4.53.3",
-194.1s 314 "type_vocab_size": 0,
-194.1s 315 "vocab_size": 128100
-194.1s 316 }
-194.1s 317 
-194.4s 318 You are resizing the embedding layer without providing a `pad_to_multiple_of` parameter. This means that the new embedding dimension will be 128004. This might induce some performance reduction as *Tensor Cores* will not be available. For more details about this, or help on choosing the correct value for resizing, refer to this guide: https://docs.nvidia.com/deeplearning/performance/dl-performance-matrix-multiplication/index.html#requirements-tc
-194.4s 319 
-194.4s 320 You are resizing the embedding layer without providing a `pad_to_multiple_of` parameter. This means that the new embedding dimension will be 128004. This might induce some performance reduction as *Tensor Cores* will not be available. For more details about this, or help on choosing the correct value for resizing, refer to this guide: https://docs.nvidia.com/deeplearning/performance/dl-performance-matrix-multiplication/index.html#requirements-tc
-196.0s 321 ✅ Model initialized in 15.0s
-196.1s 322 ⏳ Creating datasets (tokenizing 89342 train + 29013 val samples)...
-196.1s 323 ✅ Datasets created in 0.0s
-196.1s 324 PyTorch: setting up devices
-196.1s 325 
-196.1s 326 PyTorch: setting up devices
-196.2s 327 Batch/GPU: 2 | Grad accum: 16 | Effective: 64
-196.2s 328 00:26:18 - INFO - root - x86_64-linux-gnu-gcc -Wsign-compare -DNDEBUG -g -fwrapv -O2 -Wall -g -fstack-protector-strong -Wformat -Werror=format-security -g -fwrapv -O2 -fPIC -c /tmp/tmp52olfoz8/test.c -o /tmp/tmp52olfoz8/test.o
-196.3s 329 00:26:18 - INFO - root - x86_64-linux-gnu-gcc /tmp/tmp52olfoz8/test.o -laio -o /tmp/tmp52olfoz8/a.out
-196.4s 330 /usr/bin/ld: cannot find -laio: No such file or directory
-196.4s 331 collect2: error: ld returned 1 exit status
-196.4s 332 
-196.4s 333 /usr/bin/ld: cannot find -laio: No such file or directory
-196.4s 334 collect2: error: ld returned 1 exit status
-196.8s 335 00:26:19 - INFO - root - x86_64-linux-gnu-gcc -Wsign-compare -DNDEBUG -g -fwrapv -O2 -Wall -g -fstack-protector-strong -Wformat -Werror=format-security -g -fwrapv -O2 -fPIC -c /tmp/tmpck21kgkl/test.c -o /tmp/tmpck21kgkl/test.o
-196.9s 336 00:26:19 - INFO - root - x86_64-linux-gnu-gcc /tmp/tmpck21kgkl/test.o -L/usr/local/cuda -L/usr/local/cuda/lib64 -lcufile -o /tmp/tmpck21kgkl/a.out
-196.9s 337 00:26:19 - INFO - root - x86_64-linux-gnu-gcc -Wsign-compare -DNDEBUG -g -fwrapv -O2 -Wall -g -fstack-protector-strong -Wformat -Werror=format-security -g -fwrapv -O2 -fPIC -c /tmp/tmpu6i6ozip/test.c -o /tmp/tmpu6i6ozip/test.o
-196.9s 338 00:26:19 - INFO - root - x86_64-linux-gnu-gcc /tmp/tmpu6i6ozip/test.o -laio -o /tmp/tmpu6i6ozip/a.out
-197.1s 339 /usr/bin/ld: cannot find -laio: No such file or directory
-197.1s 340 collect2: error: ld returned 1 exit status
-197.1s 341 
-197.1s 342 /usr/bin/ld: cannot find -laio: No such file or directory
-197.1s 343 collect2: error: ld returned 1 exit status
-198.4s 344 
-198.4s 345 🏋️ Training fold 0...
-198.4s 346 ▶️  GPU training starting NOW - you should see progress bars below!
-198.4s 347 ==================================================
-201.5s 348 00:26:24 - WARNING - accelerate.accelerator - Gradient accumulation steps mismatch: GradientAccumulationPlugin has 1, DeepSpeed config has 16. Using DeepSpeed's value.
-201.5s 349 Traceback (most recent call last):
-201.5s 350 File "/usr/local/lib/python3.11/dist-packages/torch/_inductor/compile_worker/__main__.py", line 47, in <module>
-201.5s 351 main()
-201.5s 352 File "/usr/local/lib/python3.11/dist-packages/torch/_inductor/compile_worker/__main__.py", line 38, in main
-201.5s 353 pre_fork_setup()
-201.5s 354 File "/usr/local/lib/python3.11/dist-packages/torch/_inductor/async_compile.py", line 62, in pre_fork_setup
-201.5s 355 triton_key()
-201.5s 356 File "/usr/local/lib/python3.11/dist-packages/triton/compiler/compiler.py", line 159, in triton_key
-201.5s 357 libtriton_hash.update(chunk)
-201.5s 358 KeyboardInterrupt
-204.4s 359 Traceback (most recent call last):
-204.4s 360 File "<string>", line 1, in <module>
-204.4s 361 File "/usr/local/lib/python3.11/dist-packages/papermill/execute.py", line 131, in execute_notebook
-204.4s 362 raise_for_execution_errors(nb, output_path)
-204.4s 363 File "/usr/local/lib/python3.11/dist-packages/papermill/execute.py", line 251, in raise_for_execution_errors
-204.4s 364 raise error
-204.4s 365 papermill.exceptions.PapermillExecutionError:
-204.4s 366 ---------------------------------------------------------------------------
-204.4s 367 Exception encountered at "In [11]":
-204.4s 368 ---------------------------------------------------------------------------
-204.4s 369 ValueError                                Traceback (most recent call last)
-204.4s 370 /tmp/ipykernel_20/387500538.py in <cell line: 0>()
-204.4s 371 221     print(f"   ▶️  GPU training starting NOW - you should see progress bars below!", flush=True)
-204.4s 372 222     print(f"   " + "="*50, flush=True)
-204.4s 373 --> 223     train_result = trainer.train(resume_from_checkpoint=resume_checkpoint)
-204.4s 374 224     print(f"   " + "="*50, flush=True)
-204.4s 375 225
-204.4s 376 
-204.4s 377 /usr/local/lib/python3.11/dist-packages/transformers/trainer.py in train(self, resume_from_checkpoint, trial, ignore_keys_for_eval, **kwargs)
-204.4s 378 2204                 hf_hub_utils.enable_progress_bars()
-204.4s 379 2205         else:
-204.4s 380 -> 2206             return inner_training_loop(
-204.4s 381 2207                 args=args,
-204.4s 382 2208                 resume_from_checkpoint=resume_from_checkpoint,
-204.4s 383 
-204.4s 384 /usr/local/lib/python3.11/dist-packages/transformers/trainer.py in _inner_training_loop(self, batch_size, args, resume_from_checkpoint, trial, ignore_keys_for_eval)
-204.4s 385 2310
-204.4s 386 2311         if self.is_deepspeed_enabled:
-204.4s 387 -> 2312             self.optimizer, self.lr_scheduler = deepspeed_init(self, num_training_steps=max_steps)
-204.4s 388 2313
-204.4s 389 2314         if not delay_optimizer_creation:
-204.4s 390 
-204.4s 391 /usr/local/lib/python3.11/dist-packages/transformers/integrations/deepspeed.py in deepspeed_init(trainer, num_training_steps, inference)
-204.4s 392 442
-204.4s 393 443     # resume config update - some bits like `model` and `num_training_steps` only become available during train
-204.4s 394 --> 444     hf_deepspeed_config.trainer_config_finalize(args, model, num_training_steps)
-204.4s 395 445
-204.4s 396 446     # set the Deepspeed log level consistent with the Trainer
-204.4s 397 
-204.4s 398 /usr/local/lib/python3.11/dist-packages/transformers/integrations/deepspeed.py in trainer_config_finalize(self, args, model, num_training_steps)
-204.4s 399 266         if len(self.mismatches) > 0:
-204.4s 400 267             mismatches = "\n".join(self.mismatches)
-204.4s 401 --> 268             raise ValueError(
-204.4s 402 269                 "Please correct the following DeepSpeed config values that mismatch TrainingArguments"
-204.4s 403 270                 f" values:\n{mismatches}\nThe easiest method is to set these DeepSpeed config values to 'auto'."
-204.4s 404 
-204.4s 405 ValueError: Please correct the following DeepSpeed config values that mismatch TrainingArguments values:
-204.4s 406 - ds fp16.enabled=True vs hf fp16|fp16_full_eval+fp16_backend(amp)=False
-204.4s 407 The easiest method is to set these DeepSpeed config values to 'auto'.
-204.4s 408 
-207.1s 409 /usr/local/lib/python3.11/dist-packages/traitlets/traitlets.py:2915: FutureWarning: --Exporter.preprocessors=["remove_papermill_header.RemovePapermillHeader"] for containers is deprecated in traitlets 5.0. You can pass `--Exporter.preprocessors item` ... multiple times to add items to a list.
-207.1s 410 warn(
-212.7s 411 [NbConvertApp] Converting notebook __notebook__.ipynb to notebook
-213.0s 412 [NbConvertApp] Writing 173775 bytes to __notebook__.ipynb
-215.4s 413 /usr/local/lib/python3.11/dist-packages/traitlets/traitlets.py:2915: FutureWarning: --Exporter.preprocessors=["nbconvert.preprocessors.ExtractOutputPreprocessor"] for containers is deprecated in traitlets 5.0. You can pass `--Exporter.preprocessors item` ... multiple times to add items to a list.
-215.4s 414 warn(
-215.4s 415 [NbConvertApp] Converting notebook __notebook__.ipynb to html
-216.3s 416 [NbConvertApp] Writing 645410 bytes to __results__.html
