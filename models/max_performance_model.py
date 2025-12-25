@@ -15,7 +15,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from transformers import DebertaV2Model, DebertaV2Tokenizer, DebertaV2Config, PreTrainedTokenizerBase
-from typing import Optional, Tuple, Dict, List
+from typing import Optional, Tuple, Dict, List, Union
 
 
 class MaxPerformanceSpeakerModel(nn.Module):
@@ -240,8 +240,9 @@ class MaxPerformanceSpeakerModel(nn.Module):
         candidate_masks: torch.Tensor,
         candidate_attention_mask: Optional[torch.Tensor] = None,
         labels: Optional[torch.Tensor] = None,
+        return_attn_weights: bool = False,
         **unused_kwargs
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    ) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
         """
         Forward pass for speaker attribution.
 
@@ -255,7 +256,7 @@ class MaxPerformanceSpeakerModel(nn.Module):
 
         Returns:
             logits: Speaker scores [batch, num_candidates]
-            attention_weights: Cross-attention weights for interpretability
+            attention_weights: Cross-attention weights for interpretability (only when return_attn_weights=True)
         """
         batch_size = input_ids.size(0)
         num_candidates = candidate_masks.size(1)
@@ -331,7 +332,11 @@ class MaxPerformanceSpeakerModel(nn.Module):
         if candidate_attention_mask is not None:
             logits = logits.masked_fill(~candidate_attention_mask.bool(), float('-inf'))
 
-        return logits, attn_weights
+        # CURSOR: Return ONLY logits by default so Trainer evaluation can concatenate predictions safely when
+        # CURSOR: batches have different candidate counts. Attention weights are opt-in for interpretability.
+        if return_attn_weights:
+            return logits, attn_weights
+        return logits
 
     def predict(
         self,
@@ -353,7 +358,8 @@ class MaxPerformanceSpeakerModel(nn.Module):
         with torch.no_grad():
             logits, attn_weights = self.forward(
                 input_ids, attention_mask, quote_mask,
-                candidate_masks, candidate_attention_mask
+                candidate_masks, candidate_attention_mask,
+                return_attn_weights=True,
             )
 
             probabilities = F.softmax(logits, dim=-1)
