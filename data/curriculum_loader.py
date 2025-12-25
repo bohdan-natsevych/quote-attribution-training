@@ -246,57 +246,76 @@ class CurriculumSampler(Sampler):
             return [current]
     
     def __iter__(self) -> Iterator[int]:
-        """Generate indices for one epoch."""
-        available = self.get_available_difficulties()
+        """
+        Generate indices for one epoch.
+
+        CURSOR: This sampler must yield a stable epoch size (all samples) because HuggingFace Trainer
+        computes `max_steps` ONCE from `len(train_dataloader)`. Returning only the current curriculum
+        stage subset makes Trainer think the dataset is tiny (e.g., ~448 samples) and it stops early.
+
+        We keep curriculum behavior by ordering:
+        - stage-available difficulties first (weighted order),
+        - then the remaining difficulties (shuffled),
+        while still returning ALL indices exactly once per epoch.
+        """
+        available = set(self.get_available_difficulties())
         current = self.get_current_difficulty()
-        
-        # CURSOR: Build weighted sample pool
-        pool = []
-        weights = []
-        
-        for difficulty in available:
-            indices = self.difficulty_indices.get(difficulty, [])
-            weight = self.config.sampling_weights.get(difficulty, 1.0)
-            
-            # CURSOR: Boost current difficulty samples
-            if difficulty == current:
-                weight *= 1.5
-            
-            for idx in indices:
-                pool.append(idx)
-                # CURSOR: Optionally incorporate per-sample weights (e.g., genre balancing).
-                if self.sample_weights is not None and 0 <= idx < len(self.sample_weights):
-                    weights.append(weight * float(self.sample_weights[idx]))
-                else:
-                    weights.append(weight)
-        
-        # CURSOR: Sample indices in a weighted order (without replacement) using numpy for speed.
-        if not pool:
-            return iter([])
 
-        if len(pool) == 1:
-            return iter(pool)
-
-        weight_arr = np.asarray(weights, dtype=np.float64)
-        total_weight = float(weight_arr.sum())
-        if total_weight <= 0:
-            return iter(pool)
-
-        weight_arr = weight_arr / total_weight
-
-        # CURSOR: Use a deterministic RNG per epoch when seed is provided.
+        # CURSOR: Deterministic RNG per epoch when seed is provided.
         rng_seed = None if self.seed is None else int(self.seed) + int(self.current_epoch)
         rng = np.random.default_rng(rng_seed)
 
-        order = rng.choice(len(pool), size=len(pool), replace=False, p=weight_arr)
+        front_pool: List[int] = []
+        front_weights: List[float] = []
+        back_pool: List[int] = []
+
+        # CURSOR: Build a full-epoch permutation, keeping curriculum ordering pressure in the prefix.
+        for difficulty in DifficultyLevel:
+            indices = self.difficulty_indices.get(difficulty, [])
+            if not indices:
+                continue
+
+            if difficulty in available:
+                base_weight = float(self.config.sampling_weights.get(difficulty, 1.0))
+                if difficulty == current:
+                    base_weight *= 1.5
+
+                for idx in indices:
+                    front_pool.append(int(idx))
+                    if self.sample_weights is not None and 0 <= idx < len(self.sample_weights):
+                        front_weights.append(base_weight * float(self.sample_weights[idx]))
+                    else:
+                        front_weights.append(base_weight)
+            else:
+                back_pool.extend(int(i) for i in indices)
+
+        order_out: List[int] = []
+
+        if front_pool:
+            weight_arr = np.asarray(front_weights, dtype=np.float64)
+            total_weight = float(weight_arr.sum())
+            if total_weight > 0:
+                weight_arr = weight_arr / total_weight
+                front_order = rng.choice(len(front_pool), size=len(front_pool), replace=False, p=weight_arr)
+            else:
+                front_order = rng.permutation(len(front_pool))
+            order_out.extend([front_pool[i] for i in front_order.tolist()])
+
+        if back_pool:
+            back_order = rng.permutation(len(back_pool))
+            order_out.extend([back_pool[i] for i in back_order.tolist()])
+
         # CURSOR: Advance epoch automatically as a fallback when the caller doesn't invoke set_epoch.
         self.current_epoch += 1
-        return iter([pool[i] for i in order.tolist()])
+        return iter(order_out)
     
     def __len__(self) -> int:
-        """CURSOR: Return number of samples available at the current curriculum stage."""
-        available = self.get_available_difficulties()
-        return sum(len(self.difficulty_indices.get(d, [])) for d in available)
+        """
+        CURSOR: Return number of samples per epoch (stable, full dataset).
+
+        IMPORTANT: HuggingFace Trainer uses this (via DataLoader.__len__) to compute max_steps.
+        """
+        return int(self.total_samples)
 
 
 class CurriculumDataset(Dataset):

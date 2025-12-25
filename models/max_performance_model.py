@@ -238,7 +238,9 @@ class MaxPerformanceSpeakerModel(nn.Module):
         attention_mask: torch.Tensor,
         quote_mask: torch.Tensor,
         candidate_masks: torch.Tensor,
-        candidate_attention_mask: Optional[torch.Tensor] = None
+        candidate_attention_mask: Optional[torch.Tensor] = None,
+        labels: Optional[torch.Tensor] = None,
+        **unused_kwargs
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Forward pass for speaker attribution.
@@ -249,6 +251,7 @@ class MaxPerformanceSpeakerModel(nn.Module):
             quote_mask: Binary mask for quote tokens [batch, seq_len]
             candidate_masks: Binary masks for each candidate [batch, num_candidates, seq_len]
             candidate_attention_mask: Optional mask for valid candidates [batch, num_candidates]
+            labels: CURSOR: Optional Trainer-provided labels. Ignored here because loss is computed in the custom Trainer.
 
         Returns:
             logits: Speaker scores [batch, num_candidates]
