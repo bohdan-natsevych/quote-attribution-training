@@ -46,6 +46,12 @@ def _clone_repo(url: str, dest: Path) -> None:
         return
     dest.parent.mkdir(parents=True, exist_ok=True)
     subprocess.run(["git", "clone", "--depth", "1", url, str(dest)], check=True)
+    # CURSOR: Delete .git folder after cloning to save disk space on Kaggle
+    git_dir = dest / ".git"
+    if git_dir.exists():
+        import shutil
+        shutil.rmtree(git_dir)
+        print(f"[CLEAN] Deleted .git folder from {dest.name} to save space")
 
 
 def _download_file(url: str, dest: Path) -> None:
